@@ -36,8 +36,10 @@ before all actual logic of your application.
     {
       int result = autoupdate(argc, wargv);
 
-      // actual logic of your application
-      // ...
+      /* 
+        actual logic of your application
+        ...
+      */
     }
 
 ### UNIX
@@ -48,6 +50,8 @@ before all actual logic of your application.
     {
       int result = autoupdate(argc, argv);
 
-      // actual logic of your application
-      // ...
+      /* 
+        actual logic of your application
+        ...
+      */
     }
