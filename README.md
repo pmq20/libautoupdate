@@ -12,7 +12,11 @@ There is only one single API, i.e. `autoupdate()`, which accepts the same arugme
     int autoupdate(int argc, wchar_t *wargv[]);
 
 It never returns if a new version was detected and an in-place update was successfully performed;
-otherwise it returns an integer indicating the result of the auto-update process.
+otherwise it returns an integer indicating one of the following situations.
+
+|  Return Value  |  Indication  |
+|:--------------:|:------------:|
+|      todo      |     todo     |
 
 ## Usage
 
@@ -27,7 +31,7 @@ before all actual logic of your application.
     
     int wmain(int argc, wchar_t *wargv[])
     {
-      autoupdate(argc, wargv);
+      int result = autoupdate(argc, wargv);
 
       // actual logic of your application
       // ...
@@ -39,7 +43,7 @@ before all actual logic of your application.
     
     int main(int argc, char *argv[])
     {
-      autoupdate(argc, argv);
+      int result = autoupdate(argc, argv);
 
       // actual logic of your application
       // ...
