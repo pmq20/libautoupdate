@@ -26,7 +26,7 @@ The server is expected to repond with `HTTP 302 Found` and provide a `Location` 
 It then compares the content of `Location` header with the current version string.
 It proceeds to Round 2 if the current version string is NOT a sub-string of the `Location` header.
 
-## Round 2
+### Round 2
 
 Libautoupdate makes a full HTTP/1.0 GET request to the `Location` header of the last round.
 
