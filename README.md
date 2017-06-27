@@ -12,7 +12,7 @@ There is only one single API, i.e. `autoupdate()`. It accepts the following argu
 - the 1st and 2nd arguments are the same as those passed to `main()`
 - `host` is the host name of the update server to communicate with
 - `port` is the port number, it is a string on Windows and a 16-bit integer on UNIX
-- `path` is the paramater passed to the HTTP/1.0 GET request of Round 1 request of the following
+- `path` is the paramater passed to the HTTP/1.0 HEAD request of Round 1 request of the following
 - `current` is the current version string, see the following for details
 
 ### Round 1
