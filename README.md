@@ -34,12 +34,11 @@ Libautoupdate makes a full HTTP/1.0 GET request to the `Location` header of the 
 
 The server is expected to return the new release itself.
 
-Based on `Content-Type`, the following addtional operation might be performed:
+Based on `Content-Type`, an addtional inflation operation might be performed:
 - `Content-Type: application/x-gzip`: Gzip Inflation is performed
 - `Content-Type: application/zip`: Deflate compression is assumed and the first file is inflated and used
-- `Content-Type: application/octet-stream`: Nothing is performed
 
-### Self-replacing
+g### Self-replacing
 
 After all the above procedures the data is ready to proceed with a self-replacing.
 The program replaces itself in-place with the help of the system temporary directory,
