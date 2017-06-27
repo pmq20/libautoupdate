@@ -79,7 +79,7 @@ int autoupdate(int argc, wchar_t *wargv[])
 	hints.ai_protocol = IPPROTO_TCP;
 
 	// Resolve the server address and port
-	iResult = getaddrinfo(ENCLOSE_IO_AUTO_UPDATE_URL_Host, ENCLOSE_IO_AUTO_UPDATE_URL_Port, &hints, &result);
+	iResult = getaddrinfo(host, port, &hints, &result);
 	if (iResult != 0) {
 		std::cerr << "Auto-update Failed: getaddrinfo failed with " << iResult << std::endl;
 		WSACleanup();
@@ -111,12 +111,12 @@ int autoupdate(int argc, wchar_t *wargv[])
 	}
 	freeaddrinfo(result);
 	if (ConnectSocket == INVALID_SOCKET) {
-		std::cerr << "Auto-update Failed: connect failed on " << ENCLOSE_IO_AUTO_UPDATE_URL_Host << " and port " << ENCLOSE_IO_AUTO_UPDATE_URL_Port << std::endl;
+		std::cerr << "Auto-update Failed: connect failed on " << host << " and port " << port << std::endl;
 		WSACleanup();
 		return;
 	}
 	if (5 != send(ConnectSocket, "HEAD ", 5, 0) ||
-	    strlen(ENCLOSE_IO_AUTO_UPDATE_URL_Path) != send(ConnectSocket, ENCLOSE_IO_AUTO_UPDATE_URL_Path, strlen(ENCLOSE_IO_AUTO_UPDATE_URL_Path), 0) ||
+	    strlen(path) != send(ConnectSocket, path, strlen(path), 0) ||
 	    13 != send(ConnectSocket, " HTTP/1.0\r\n\r\n", 13, 0)) {
 		std::cerr << "Auto-update Failed: send failed with " << WSAGetLastError() << std::endl;
 		closesocket(ConnectSocket);
@@ -184,9 +184,9 @@ int autoupdate(int argc, wchar_t *wargv[])
 		std::cerr << "Auto-update Failed: failed to find a Location header" << std::endl;
 		return;
 	}
-	if (strstr(found, ENCLOSE_IO_AUTO_UPDATE_BASE)) {
+	if (strstr(found, current)) {
 		/* Latest version confirmed. No need to update */
-		return;
+		return 0;
 	}
 	std::string s;
 	std::cerr << "New version detected. Would you like to update? [y/N]: " << std::flush;
@@ -243,32 +243,32 @@ int autoupdate(int argc, wchar_t *wargv[])
 	std::string url{ found };
 	std::cerr << "Downloading from " << url << std::endl;
 	// TODO https
-	std::string host;
+	std::string host2;
 	if (url.size() >= 8 && "https://" == url.substr(0, 8)) {
-		host = url.substr(8);
+		host2 = url.substr(8);
 	} else if (url.size() >= 7 && "http://" == url.substr(0, 7)) {
-		host = url.substr(7);
+		host2 = url.substr(7);
 	} else {
 		std::cerr << "Auto-update Failed: failed to find http:// or https:// at the beginning of URL " << url << std::endl;
 		return;
 	}
-	std::size_t found_slash = host.find('/');
+	std::size_t found_slash = host2.find('/');
 	std::string request_path;
 	if (std::string::npos == found_slash) {
 		request_path = '/';
 	}
 	else {
-		request_path = host.substr(found_slash);
-		host = host.substr(0, found_slash);
+		request_path = host2.substr(found_slash);
+		host2 = host2.substr(0, found_slash);
 	}
-	std::size_t found_colon = host.find(':');
-	std::string port;
+	std::size_t found_colon = host2.find(':');
+	std::string port2;
 	if (std::string::npos == found_colon) {
-		port = "80";
+		port2 = "80";
 	}
 	else {
-		port = host.substr(found_colon + 1);
-		host = host.substr(0, found_colon);
+		port2 = host2.substr(found_colon + 1);
+		host2 = host2.substr(0, found_colon);
 	}
 
 	result = NULL;
@@ -279,7 +279,7 @@ int autoupdate(int argc, wchar_t *wargv[])
 	hints.ai_protocol = IPPROTO_TCP;
 
 	// Resolve the server address and port
-	iResult = getaddrinfo(host.c_str(), port.c_str(), &hints, &result);
+	iResult = getaddrinfo(host2.c_str(), port2.c_str(), &hints, &result);
 	if (iResult != 0) {
 		std::cerr << "Auto-update Failed: getaddrinfo failed with " << iResult << std::endl;
 		WSACleanup();
@@ -309,7 +309,7 @@ int autoupdate(int argc, wchar_t *wargv[])
 	}
 	freeaddrinfo(result);
 	if (ConnectSocket == INVALID_SOCKET) {
-		std::cerr << "Auto-update Failed: connect failed on " << host << " and port " << port << std::endl;
+		std::cerr << "Auto-update Failed: connect failed on " << host2 << " and port " << port2 << std::endl;
 		WSACleanup();
 		return;
 	}
@@ -317,7 +317,7 @@ int autoupdate(int argc, wchar_t *wargv[])
 		request_path.size() != send(ConnectSocket, request_path.c_str(), request_path.size(), 0) ||
 		11 != send(ConnectSocket, " HTTP/1.0\r\n", 11, 0) ||
 		6 != send(ConnectSocket, "Host: ", 6, 0) ||
-		host.size() != send(ConnectSocket, host.c_str(), host.size(), 0) ||
+		host2.size() != send(ConnectSocket, host2.c_str(), host2.size(), 0) ||
 		4 != send(ConnectSocket, "\r\n\r\n", 4, 0)) {
 		std::cerr << "Auto-update Failed: send failed with " << WSAGetLastError() << std::endl;
 		closesocket(ConnectSocket);

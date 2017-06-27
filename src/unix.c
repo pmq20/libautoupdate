@@ -52,31 +52,23 @@ int autoupdate(int argc, char *argv[])
 		std::cerr << "Auto-update Failed: socket creation failed" << std::endl;
 		return;
 	}
-	server = gethostbyname(ENCLOSE_IO_AUTO_UPDATE_URL_Host);
+	server = gethostbyname(host);
 	if (server == NULL) {
 		close(sockfd);
-		std::cerr << "Auto-update Failed: gethostbyname failed for " << ENCLOSE_IO_AUTO_UPDATE_URL_Host << std::endl;
-		return;
-	}
-	if (0 == strcmp("https", ENCLOSE_IO_AUTO_UPDATE_URL_Scheme)) {
-		close(sockfd);
-		std::cerr << "Auto-update Failed: "
-			"HTTPS is not supported yet.\n"
-			"Pull requests are welcome on GitHub at "
-			"https://github.com/pmq20/libautoupdate" << std::endl;
+		std::cerr << "Auto-update Failed: gethostbyname failed for " << host << std::endl;
 		return;
 	}
 	memset(&serv_addr, 0, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_port = htons(ENCLOSE_IO_AUTO_UPDATE_URL_Port);
+	serv_addr.sin_port = htons(port);
 	memcpy(&serv_addr.sin_addr.s_addr, server->h_addr, server->h_length);
 	if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
 		close(sockfd);
-		std::cerr << "Auto-update Failed: connect failed on " << ENCLOSE_IO_AUTO_UPDATE_URL_Host << " and port " << ENCLOSE_IO_AUTO_UPDATE_URL_Port << std::endl;
+		std::cerr << "Auto-update Failed: connect failed on " << host << " and port " << port << std::endl;
 		return;
 	}
 	if (5 != write(sockfd, "HEAD ", 5) ||
-	    strlen(ENCLOSE_IO_AUTO_UPDATE_URL_Path) != write(sockfd, ENCLOSE_IO_AUTO_UPDATE_URL_Path, strlen(ENCLOSE_IO_AUTO_UPDATE_URL_Path)) ||
+	    strlen(path) != write(sockfd, path, strlen(path)) ||
 	    13 != write(sockfd, " HTTP/1.0\r\n\r\n", 13)) {
 		close(sockfd);
 		std::cerr << "Auto-update Failed: write failed" << std::endl;
@@ -128,9 +120,9 @@ int autoupdate(int argc, char *argv[])
 		std::cerr << "Auto-update Failed: failed to find a Location header" << std::endl;
 		return;
 	}
-	if (strstr(found, ENCLOSE_IO_AUTO_UPDATE_BASE)) {
+	if (strstr(found, current)) {
 		/* Latest version confirmed. No need to update */
-		return;
+		return 0;
 	}
 	std::string s;
 	std::cerr << "New version detected. Would you like to update? [y/N]: " << std::flush;
@@ -160,56 +152,56 @@ int autoupdate(int argc, char *argv[])
 	std::string url { found };
 	std::cerr << "Downloading from " << url << std::endl;
 	// TODO https
-	std::string host;
+	std::string host2;
 	if (url.size() >= 8 && "https://" == url.substr(0, 8)) {
-		host = url.substr(8);
+		host2 = url.substr(8);
 	} else if (url.size() >= 7 && "http://" == url.substr(0, 7)) {
-		host = url.substr(7);
+		host2 = url.substr(7);
 	} else {
 		std::cerr << "Auto-update Failed: failed to find http:// or https:// at the beginning of URL " << url << std::endl;
 		return;
 	}
-	std::size_t found_slash = host.find('/');
+	std::size_t found_slash = host2.find('/');
 	std::string request_path;
 	if (std::string::npos == found_slash) {
 		request_path = '/';
 	} else {
-		request_path = host.substr(found_slash);
-		host = host.substr(0, found_slash);
+		request_path = host2.substr(found_slash);
+		host2 = host2.substr(0, found_slash);
 	}
-	std::size_t found_colon = host.find(':');
-	int port;
+	std::size_t found_colon = host2.find(':');
+	int port2;
 	if (std::string::npos == found_colon) {
-		port = 80;
+		port2 = 80;
 	} else {
-		port = std::stoi(host.substr(found_colon + 1));
-		host = host.substr(0, found_colon);
+		port2 = std::stoi(host2.substr(found_colon + 1));
+		host2 = host2.substr(0, found_colon);
 	}
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
 		std::cerr << "Auto-update Failed: socket creation failed" << std::endl;
 		return;
 	}
-	server = gethostbyname(host.c_str());
+	server = gethostbyname(host2.c_str());
 	if (server == NULL) {
 		close(sockfd);
-		std::cerr << "Auto-update Failed: gethostbyname failed for " << host << std::endl;
+		std::cerr << "Auto-update Failed: gethostbyname failed for " << host2 << std::endl;
 		return;
 	}
 	memset(&serv_addr, 0, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_port = htons(port);
+	serv_addr.sin_port = htons(port2);
 	memcpy(&serv_addr.sin_addr.s_addr, server->h_addr, server->h_length);
 	if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
 		close(sockfd);
-		std::cerr << "Auto-update Failed: connect failed on " << host << " and port " << port << std::endl;
+		std::cerr << "Auto-update Failed: connect failed on " << host2 << " and port " << port2 << std::endl;
 		return;
 	}
 	if (4 != write(sockfd, "GET ", 4) ||
 	    request_path.size() != write(sockfd, request_path.c_str(), request_path.size()) ||
 	    11 != write(sockfd, " HTTP/1.0\r\n", 11) ||
 	    6 != write(sockfd, "Host: ", 6) ||
-	    host.size() != write(sockfd, host.c_str(), host.size()) ||
+	    host2.size() != write(sockfd, host2.c_str(), host2.size()) ||
 	    4 != write(sockfd, "\r\n\r\n", 4)) {
 		close(sockfd);
 		std::cerr << "Auto-update Failed: write failed" << std::endl;

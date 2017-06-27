@@ -9,10 +9,29 @@
 #define AUTOUPDATE_H_8C141CA2
 
 #ifdef _WIN32
-  #include <wchar.h>
-  int autoupdate(int argc, wchar_t *wargv[]);
+
+#include <wchar.h>
+/* Windows */
+int autoupdate(
+	int argc,
+	wchar_t *wargv[],
+	const char *host,
+	const char *port,
+	const char *path,
+);
+
 #else
-  int autoupdate(int argc, char *argv[]);
+
+#include <stdint.h>
+/* UNIX */
+int autoupdate(
+	int argc,
+	char *argv[],
+	const char *host,
+	uint16_t port,
+	const char *path,
+);
+
 #endif // _WIN32
 
 #endif /* end of include guard: AUTOUPDATE_H_8C141CA2 */
