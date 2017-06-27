@@ -24,7 +24,7 @@ Libautoupdate first makes a HTTP/1.0 HEAD request to the server, in order to pee
 The server is expected to repond with `HTTP 302 Found` and provide a `Location` header.
 
 It then compares the content of `Location` header with the current version string.
-It proceeds to Round 2 if a mismatch happens.
+It proceeds to Round 2 if the current version string is NOT a sub-string of the `Location` header.
 
 ## Round 2
 
