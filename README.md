@@ -65,6 +65,7 @@ See the following code for examples.
 int wmain(int argc, wchar_t *wargv[])
 {
 	int autoupdate_result;
+
 	autoupdate_result = autoupdate(
 		argc,
 		wargv,
@@ -89,6 +90,7 @@ int wmain(int argc, wchar_t *wargv[])
 int main(int argc, char *argv[])
 {
 	int autoupdate_result;
+
 	autoupdate_result = autoupdate(
 		argc,
 		argv,
