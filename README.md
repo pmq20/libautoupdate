@@ -53,7 +53,7 @@ Otherwise, it returns one of the following integer to indicate the situation.
 
 ## Examples
 
-Just call `autoupdate()` at the head of your `main()`,
+Just call `autoupdate()` at the beginning of your `main()`,
 before all actual logic of your application.
 See the following code for examples.
 
