@@ -32,9 +32,9 @@ Libautoupdate makes a full HTTP/1.0 GET request to the `Location` header of the 
 
     Libautoupdate <-- HTTP/1.0 GET request --> Server
 
-The server is expected to return the new release itself.
+The server is expected to respond with `200 OK` transferring the new release itself.
 
-Based on `Content-Type`, an addtional inflation operation might be performed:
+Based on the `Content-Type` header received, an addtional inflation operation might be performed:
 - `Content-Type: application/x-gzip`: Gzip Inflation is performed
 - `Content-Type: application/zip`: Deflate compression is assumed and the first file is inflated and used
 
