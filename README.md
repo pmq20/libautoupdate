@@ -43,7 +43,7 @@ Finally the program replaces itself in-place and restarts with the new release.
 
 ### Return Value
 
-It never returns if a new version was detected and auto-update was successfully proceeded.
+It never returns if a new version was detected and auto-update was successfully performed.
 Otherwise, it returns one of the following integer to indicate the situation.
 
 |  Return Value  | Indication   |
