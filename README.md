@@ -51,7 +51,7 @@ Otherwise, it returns one of the following integer to indicate the situation.
 |        0       | Latest version confirmed. No need to update.
 |        1       | Auto-update shall not proceed due to environment variable `LIBAUTOUPDATE_SKIP` being set. |
 
-## Usage
+## Examples
 
 Just call `autoupdate()` at the head of your `main()`,
 before all actual logic of your application.
