@@ -41,7 +41,7 @@ Based on `Content-Type`, the following addtional operation might be performed:
 
 ### Self-replacing
 
-After all the above procedures the data has been in-place to allow a self-replacing.
+After all the above procedures the data is ready to proceed with a self-replacing.
 The program replaces itself in-place with the help of the system temporary directory,
 after which it restarts itself with the new release.
 
