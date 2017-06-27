@@ -41,7 +41,7 @@ Based on `Content-Type`, the following addtional operation might be performed:
 
 Finally the program replaces itself in-place and restarts with the new release.
 
-## Return Value
+### Return Value
 
 It never returns if a new version was detected and auto-update was successfully proceeded.
 Otherwise, it returns one of the following integer to indicate the situation.
