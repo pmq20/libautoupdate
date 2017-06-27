@@ -10,11 +10,11 @@ Cross-platform C library to enable your application to auto-update itself in pla
 There is only one single API, i.e. `autoupdate()`, which accepts the same arugments as `main()`.
 
 ```C
-    /* Windows */
-    int autoupdate(int argc, char *argv[]);
+/* Windows */
+int autoupdate(int argc, char *argv[]);
 
-    /* UNIX */
-    int autoupdate(int argc, wchar_t *wargv[]);
+/* UNIX */
+int autoupdate(int argc, wchar_t *wargv[]);
 ```
 
 It never returns if a new version was detected and auto-update was proceeded,
@@ -35,33 +35,34 @@ before all actual logic of your application.
 ### Windows
 
 ```C
-    #include <autoupdate.h>
-    
-    int wmain(int argc, wchar_t *wargv[])
-    {
-      int autoupdate_result;
-      autoupdate_result = autoupdate(argc, wargv);
+#include <autoupdate.h>
 
-      /* 
-        actual logic of your application
-        ...
-      */
-    }
+int wmain(int argc, wchar_t *wargv[])
+{
+  int autoupdate_result;
+  autoupdate_result = autoupdate(argc, wargv);
+
+  /* 
+    actual logic of your application
+    ...
+  */
+}
 ```
 
 ### UNIX
 
 ```C
-    #include <autoupdate.h>
-    
-    int main(int argc, char *argv[])
-    {
-      int autoupdate_result;
-      autoupdate_result = autoupdate(argc, argv);
+#include <autoupdate.h>
 
-      /* 
-        actual logic of your application
-        ...
-      */
-    }
+int main(int argc, char *argv[])
+{
+  int autoupdate_result;
+  autoupdate_result = autoupdate(argc, argv);
+
+  /* 
+    actual logic of your application
+    ...
+  */
+}
 ```
+g
