@@ -10,9 +10,9 @@
 
 #ifdef _WIN32
   #include <wchar.h>
-  void autoupdate(int argc, wchar_t *wargv[]);
+  int autoupdate(int argc, wchar_t *wargv[]);
 #else
-  void autoupdate(int argc, char *argv[]);
+  int autoupdate(int argc, char *argv[]);
 #endif // _WIN32
 
 #endif /* end of include guard: AUTOUPDATE_H_8C141CA2 */

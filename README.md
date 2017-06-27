@@ -17,9 +17,9 @@ There is only one single API, i.e. `autoupdate()`, which accepts the same arugme
 It never returns if a new version was detected and an in-place update was successfully performed;
 otherwise it returns an integer indicating one of the following situations.
 
-|  Return Value  |  Indication  |
-|:--------------:|:------------:|
-|      todo      |     todo     |
+|  Return Value  | Indication   |
+|:--------------:|--------------|
+|        1       | Auto-update shall not proceed due to environment variable `LIBAUTOUPDATE_SKIP` being set |
 
 ## Usage
 
@@ -34,7 +34,8 @@ before all actual logic of your application.
     
     int wmain(int argc, wchar_t *wargv[])
     {
-      int result = autoupdate(argc, wargv);
+      int autoupdate_result;
+      autoupdate_result = autoupdate(argc, wargv);
 
       /* 
         actual logic of your application
@@ -48,7 +49,8 @@ before all actual logic of your application.
     
     int main(int argc, char *argv[])
     {
-      int result = autoupdate(argc, argv);
+      int autoupdate_result;
+      autoupdate_result = autoupdate(argc, argv);
 
       /* 
         actual logic of your application
