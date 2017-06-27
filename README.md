@@ -14,8 +14,9 @@ There is only one single API, i.e. `autoupdate()`, which accepts the same arugme
     // UNIX
     int autoupdate(int argc, wchar_t *wargv[]);
 
-It never returns if a new version was detected and an in-place update was successfully performed;
-otherwise it returns an integer indicating one of the following situations.
+It never returns if a new version was detected and auto-update was proceeded,
+in which case the program replaces itself in-place and restarts with the new version.
+Otherwise, it returns an integer indicating one of the following situations.
 
 |  Return Value  | Indication   |
 |:--------------:|--------------|
