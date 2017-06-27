@@ -11,7 +11,6 @@
 #ifdef _WIN32
 
 #include <wchar.h>
-/* Windows */
 int autoupdate(
 	int argc,
 	wchar_t *wargv[],
@@ -23,7 +22,6 @@ int autoupdate(
 #else
 
 #include <stdint.h>
-/* UNIX */
 int autoupdate(
 	int argc,
 	char *argv[],

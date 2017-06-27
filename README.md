@@ -38,7 +38,7 @@ Based on the `Content-Type` header received, an addtional inflation operation mi
 - `Content-Type: application/x-gzip`: Gzip Inflation is performed
 - `Content-Type: application/zip`: Deflate compression is assumed and the first file is inflated and used
 
-g### Self-replacing
+### Self-replacing
 
 After all the above procedures the data is ready to proceed with a self-replacing.
 The program replaces itself in-place with the help of the system temporary directory,
