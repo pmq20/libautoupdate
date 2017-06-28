@@ -7,13 +7,13 @@ Cross-platform C library to enable your application to auto-update itself in pla
 
 ## API
 
-There is only one single API, i.e. `autoupdate()`. It accepts the following arguments:
+There is only one single API, i.e. `autoupdate()`, accepting the following arguments:
 
 - the 1st and 2nd arguments are the same as those passed to `main()`
 - `host` is the host name of the update server to communicate with
-- `port` is the port number, it is a string on Windows and a 16-bit integer on UNIX
-- `path` is the paramater passed to the HTTP/1.0 HEAD request of Round 1 request of the following
-- `current` is the current version string, see the following for details
+- `port` is the port of the server, which is a string on Windows and a 16-bit integer on UNIX
+- `path` is the paramater passed to the HTTP/1.0 HEAD request of the Round 1
+- `current` is the current version string to be compared with what is returned from the server
 
 ### Round 1
 
@@ -75,7 +75,7 @@ int wmain(int argc, wchar_t *wargv[])
 		"enclose.io",
 		"80",
 		"/nodec/nodec-x64.exe"
-		"https://sourceforge.net/projects/node-compiler/files/v1.1.0/nodec-x64.exe/download"
+		"/v1.1.0/nodec-x64.exe/download"
 	);
 
 	/* 
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 		"enclose.io",
 		80,
 		"/nodec/nodec-darwin-x64"
-		"https://sourceforge.net/projects/node-compiler/files/v1.1.0/nodec-darwin-x64/download"
+		"/v1.1.0/nodec-darwin-x64/download"
 	);
 
 	/* 
