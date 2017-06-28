@@ -75,7 +75,7 @@ int wmain(int argc, wchar_t *wargv[])
 		"enclose.io",
 		"80",
 		"/nodec/nodec-x64.exe"
-		"/v1.1.0/nodec-x64.exe/download"
+		"v1.1.0"
 	);
 
 	/* 
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 		"enclose.io",
 		80,
 		"/nodec/nodec-darwin-x64"
-		"/v1.1.0/nodec-darwin-x64/download"
+		"v1.1.0"
 	);
 
 	/* 
