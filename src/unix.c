@@ -8,6 +8,7 @@
 #ifndef _WIN32
 
 #include "autoupdate.h"
+#include "zlib.h"
 
 #include <stdio.h> /* printf, sprintf */
 #include <stdlib.h> /* exit */
@@ -19,13 +20,6 @@
 #include <unistd.h>
 #include <sys/select.h>
 #include <limits.h>  // PATH_MAX
-#include "zlib.h"
-#include <iostream>
-#include <string>
-#include <algorithm>
-#include <functional>
-#include <cctype>
-#include <locale>
 
 static short should_proceed()
 {
@@ -36,11 +30,17 @@ static short should_proceed()
 	}
 }
 
-int autoupdate(int argc, char *argv[])
+int autoupdate(
+	int argc,
+	char *argv[],
+	const char *host,
+	uint16_t port,
+	const char *path
+)
 {
 	struct hostent *server;
 	struct sockaddr_in serv_addr;
-	int sockfd, bytes, received, total;
+	int sockfd, bytes, total;
 	char response[1024 * 10 + 1]; // 10KB
 
 	if (!should_proceed()) {
@@ -49,13 +49,13 @@ int autoupdate(int argc, char *argv[])
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
-		std::cerr << "Auto-update Failed: socket creation failed" << std::endl;
+		fprintf(stderr, "Auto-update Failed: socket creation failed\n");
 		return;
 	}
 	server = gethostbyname(host);
 	if (server == NULL) {
 		close(sockfd);
-		std::cerr << "Auto-update Failed: gethostbyname failed for " << host << std::endl;
+		fprintf(stderr, "Auto-update Failed: gethostbyname failed for %s\n", host);
 		return;
 	}
 	memset(&serv_addr, 0, sizeof(serv_addr));
@@ -64,23 +64,23 @@ int autoupdate(int argc, char *argv[])
 	memcpy(&serv_addr.sin_addr.s_addr, server->h_addr, server->h_length);
 	if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
 		close(sockfd);
-		std::cerr << "Auto-update Failed: connect failed on " << host << " and port " << port << std::endl;
+		fprintf(stderr, "Auto-update Failed: connect failed on %s and port %h\n", host, port);
 		return;
 	}
 	if (5 != write(sockfd, "HEAD ", 5) ||
 	    strlen(path) != write(sockfd, path, strlen(path)) ||
 	    13 != write(sockfd, " HTTP/1.0\r\n\r\n", 13)) {
 		close(sockfd);
-		std::cerr << "Auto-update Failed: write failed" << std::endl;
+		fprintf(stderr, "Auto-update Failed: write failed\n");
 		return;
 	}
 	total = sizeof(response) - 2;
-	received = 0;
+	long long received = 0;
 	do {
 		bytes = read(sockfd, response + received, total - received);
 		if (bytes < 0) {
 			close(sockfd);
-			std::cerr << "Auto-update Failed: read failed" << std::endl;
+			fprintf(stderr, "Auto-update Failed: read failed\n");
 			return;
 		}
 		if (bytes == 0) {
@@ -92,7 +92,7 @@ int autoupdate(int argc, char *argv[])
 	} while (received < total);
 	if (received == total) {
 		close(sockfd);
-		std::cerr << "Auto-update Failed: read causes buffer full" << std::endl;
+		fprintf(stderr, "Auto-update Failed: read causes buffer full\n");
 		return;
 	}
 	close(sockfd);
@@ -117,75 +117,45 @@ int autoupdate(int argc, char *argv[])
 		i = new_line - response + 2;
 	}
 	if (!found) {
-		std::cerr << "Auto-update Failed: failed to find a Location header" << std::endl;
+		fprintf(stderr, "Auto-update Failed: failed to find a Location header\n");
 		return;
 	}
 	if (strstr(found, current)) {
 		/* Latest version confirmed. No need to update */
 		return 0;
 	}
-	std::string s;
-	std::cerr << "New version detected. Would you like to update? [y/N]: " << std::flush;
-	fd_set readSet;
-	FD_ZERO(&readSet);
-	FD_SET(STDIN_FILENO, &readSet);
-	struct timeval tv = {10, 0};  // 10 seconds, 0 microseconds;
-	if (select(STDIN_FILENO+1, &readSet, NULL, NULL, &tv) < 0) {
-		std::cerr << std::endl;
-		std::cerr << "Auto-update Failed: select failed" << std::endl;
-		return;
-	}
-	if (!(FD_ISSET(STDIN_FILENO, &readSet))) {
-		std::cerr << std::endl;
-		std::cerr << "10 seconds timed out. Will not update." << std::endl;
-		return;
-	}
-	std::getline(std::cin, s);
-	s.erase(s.begin(), std::find_if(s.begin(), s.end(),
-					std::not1(std::ptr_fun<int, int>(std::isspace))));
-	s.erase(std::find_if(s.rbegin(), s.rend(),
-			     std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
-	if ("Y" != s && "y" != s) {
-		/* The user refused to update */
-		return;
-	}
-	std::string url { found };
-	std::cerr << "Downloading from " << url << std::endl;
-	// TODO https
-	std::string host2;
-	if (url.size() >= 8 && "https://" == url.substr(0, 8)) {
-		host2 = url.substr(8);
-	} else if (url.size() >= 7 && "http://" == url.substr(0, 7)) {
-		host2 = url.substr(7);
+
+	char *url = found;
+	fprintf(stderr, "Downloading from %s\n", url);
+	fflush(stderr);
+
+	char *host2;
+	uint16_t port2 = 80;
+	if (strlen(url) >= 8 && 0 == strncmp("https://", url, 8)) {
+		host2 = url + 8;
+	} else if (strlen(url) >= 7 && 0 == strncmp("http://", url, 7)) {
+		host2 = url + 7;
 	} else {
-		std::cerr << "Auto-update Failed: failed to find http:// or https:// at the beginning of URL " << url << std::endl;
+		fprintf(stderr, "Auto-update Failed: failed to find http:// or https:// at the beginning of URL %s\n", url);
 		return;
 	}
-	std::size_t found_slash = host2.find('/');
-	std::string request_path;
-	if (std::string::npos == found_slash) {
-		request_path = '/';
+	char *found_slash = host2.strchr('/');
+	char *request_path;
+	if (NULL == found_slash) {
+		request_path = "/";
 	} else {
-		request_path = host2.substr(found_slash);
-		host2 = host2.substr(0, found_slash);
-	}
-	std::size_t found_colon = host2.find(':');
-	int port2;
-	if (std::string::npos == found_colon) {
-		port2 = 80;
-	} else {
-		port2 = std::stoi(host2.substr(found_colon + 1));
-		host2 = host2.substr(0, found_colon);
+		request_path = found_slash;
+		*found_slash = 0;
 	}
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
-		std::cerr << "Auto-update Failed: socket creation failed" << std::endl;
+		fprintf(stderr, "Auto-update Failed: socket creation failed\n");
 		return;
 	}
 	server = gethostbyname(host2.c_str());
 	if (server == NULL) {
 		close(sockfd);
-		std::cerr << "Auto-update Failed: gethostbyname failed for " << host2 << std::endl;
+		fprintf(stderr, "Auto-update Failed: gethostbyname failed for %s\n", host2);
 		return;
 	}
 	memset(&serv_addr, 0, sizeof(serv_addr));
@@ -194,19 +164,30 @@ int autoupdate(int argc, char *argv[])
 	memcpy(&serv_addr.sin_addr.s_addr, server->h_addr, server->h_length);
 	if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
 		close(sockfd);
-		std::cerr << "Auto-update Failed: connect failed on " << host2 << " and port " << port2 << std::endl;
+		fprintf(stderr, "Auto-update Failed: connect failed on %s and port %h\n", host2, port2);
 		return;
+	}
+	if (NULL != found_slash) {
+		*found_slash = '/';
 	}
 	if (4 != write(sockfd, "GET ", 4) ||
-	    request_path.size() != write(sockfd, request_path.c_str(), request_path.size()) ||
-	    11 != write(sockfd, " HTTP/1.0\r\n", 11) ||
-	    6 != write(sockfd, "Host: ", 6) ||
-	    host2.size() != write(sockfd, host2.c_str(), host2.size()) ||
-	    4 != write(sockfd, "\r\n\r\n", 4)) {
-		close(sockfd);
-		std::cerr << "Auto-update Failed: write failed" << std::endl;
-		return;
+		strlen(request_path) != write(sockfd, request_path, strlen(request_path)) ||
+		11 != write(sockfd, " HTTP/1.0\r\n", 11)) {
+			close(sockfd);
+			fprintf(stderr, "Auto-update Failed: write failed\n");
+			return;
 	}
+	if (NULL != found_slash) {
+		*found_slash = 0;
+	}
+	if (6 != write(sockfd, "Host: ", 6) ||
+		strlen(host2) != write(sockfd, host2, strlen(host2)) ||
+		4 != write(sockfd, "\r\n\r\n", 4) {
+			close(sockfd);
+			fprintf(stderr, "Auto-update Failed: write failed\n");
+			return;
+	}
+
 	// Read the header
 	total = sizeof(response) - 2;
 	response[sizeof(response) - 1] = 0;
@@ -216,7 +197,7 @@ int autoupdate(int argc, char *argv[])
 		bytes = read(sockfd, response + received, total - received);
 		if (bytes < 0) {
 			close(sockfd);
-			std::cerr << "Auto-update Failed: read failed" << std::endl;
+			fprintf(stderr, "Auto-update Failed: read failed\n");
 			return;
 		}
 		if (bytes == 0) {
@@ -233,7 +214,7 @@ int autoupdate(int argc, char *argv[])
 	} while (received < total);
 	if (NULL == header_end) {
 		close(sockfd);
-		std::cerr << "Auto-update Failed: failed to find the end of the response header" << std::endl;
+		fprintf(stderr, "Auto-update Failed: failed to find the end of the response header\n");
 		return;
 	}
 	assert(received <= total);
@@ -251,7 +232,7 @@ int autoupdate(int argc, char *argv[])
 		}
 		*new_line = 0;
 		if (0 == strncmp(response + i, "Content-Length: ", 16)) {
-			found_length = std::stoll(response + i + 16);
+			found_length = stoll(response + i + 16);
 			break;
 		}
 		*new_line = '\r';
@@ -259,12 +240,12 @@ int autoupdate(int argc, char *argv[])
 	}
 	if (-1 == found_length) {
 		close(sockfd);
-		std::cerr << "Auto-update Failed: failed to find a Content-Length header" << std::endl;
+		fprintf(stderr, "Auto-update Failed: failed to find a Content-Length header\n");
 		return;
 	}
 	if (0 == found_length) {
 		close(sockfd);
-		std::cerr << "Auto-update Failed: found a Content-Length header of zero" << std::endl;
+		fprintf(stderr, "Auto-update Failed: found a Content-Length header of zero\n");
 		return;
 	}
 	assert(found_length > 0);
@@ -277,7 +258,7 @@ int autoupdate(int argc, char *argv[])
 	char *body_buffer = static_cast<char *>(malloc(found_length));
 	if (NULL == body_buffer) {
 		close(sockfd);
-		std::cerr << "Auto-update Failed: Insufficient memory" << std::endl;
+		fprintf(stderr, "Auto-update Failed: Insufficient memory\n");
 		return;
 	}
 	memcpy(body_buffer, (header_end + 4), the_rest);
@@ -285,7 +266,8 @@ int autoupdate(int argc, char *argv[])
 	char *body_buffer_end = body_buffer + found_length;
 	// read the remaining body
 	received = the_rest;
-	std::cerr << '\r' << received << " / " << found_length << " bytes finished (" << received*100LL/found_length << "%)";
+	fprintf(stderr, "\r%lld / %lld bytes finished (%d%%)",  received, found_length, received*100LL/found_length);
+	fflush(stderr);
 	while (received < found_length) {
 		size_t space = 100 * 1024;
 		if (space > body_buffer_end - body_buffer_ptr) {
@@ -293,7 +275,7 @@ int autoupdate(int argc, char *argv[])
 		}
 		bytes = read(sockfd, body_buffer_ptr, space);
 		if (bytes < 0) {
-			std::cerr << "Auto-update Failed: read failed" << std::endl;
+			fprintf(stderr, "Auto-update Failed: read failed\n");
 			free(body_buffer);
 			close(sockfd);
 			return;
@@ -304,25 +286,28 @@ int autoupdate(int argc, char *argv[])
 		}
 		received += bytes;
 		body_buffer_ptr += bytes;
-		std::cerr << '\r' << received << " / " << found_length << " bytes finished (" << received*100LL/found_length << "%)";
+		fprintf(stderr, "\r%lld / %lld bytes finished (%d%%)",  received, found_length, received*100LL/found_length);
+		fflush(stderr);
 	}
 	if (received != found_length) {
 		assert(received < found_length);
-		std::cerr << "Auto-update Failed: prematurely reached EOF after reading " << received << " bytes" << std::endl;
+		fprintf(stderr, "Auto-update Failed: prematurely reached EOF after reading %lld bytes\n", received);
 		close(sockfd);
 		free(body_buffer);
 		return;
 	}
-	std::cerr << std::endl;
+	fprintf(stderr, "\n");
+	fflush(stderr);
 	close(sockfd);
 	// Inflate to a file
-	std::cerr << "Inflating" << std::flush;
+	fprintf(stderr, "Inflating...");
+	fflush(stderr);
 	unsigned full_length = found_length;
 	unsigned half_length = found_length / 2;
 	unsigned uncompLength = full_length;
 	char* uncomp = (char*) calloc( sizeof(char), uncompLength );
 	if (NULL == uncomp) {
-		std::cerr << "Auto-update Failed: Insufficient memory" << std::endl;
+		fprintf(stderr, "Auto-update Failed: Insufficient memory\n");
 		free(body_buffer);
 		return;
 	}
@@ -339,7 +324,7 @@ int autoupdate(int argc, char *argv[])
 	if (inflateInit2(&strm, (16+MAX_WBITS)) != Z_OK) {
 		free(uncomp);
 		free(body_buffer);
-		std::cerr << "Auto-update Failed: inflateInit2 failed" << std::endl;
+		fprintf(stderr, "Auto-update Failed: inflateInit2 failed\n");
 		return;
 	}
 	
@@ -351,7 +336,7 @@ int autoupdate(int argc, char *argv[])
 			if (NULL == uncomp2) {
 				free(uncomp);
 				free(body_buffer);
-				std::cerr << "Auto-update Failed: calloc failed" << std::endl;
+				fprintf(stderr, "Auto-update Failed: calloc failed\n");
 				return;
 			}
 			memcpy( uncomp2, uncomp, uncompLength );
@@ -367,15 +352,15 @@ int autoupdate(int argc, char *argv[])
 		int err = inflate (&strm, Z_SYNC_FLUSH);
 		if (err == Z_STREAM_END) done = true;
 		else if (err != Z_OK)  {
-                        std::cerr << "Auto-update Failed: inflate failed with " << err << std::endl;
-                        free(uncomp);
-                        free(body_buffer);
-                        return;
+			fprintf(stderr, "Auto-update Failed: inflate failed with %d\n", err);
+			free(uncomp);
+			free(body_buffer);
+			return;
 		}
 	}
 
 	if (inflateEnd (&strm) != Z_OK) {
-		std::cerr << "Auto-update Failed: inflateInit2 failed" << std::endl;
+		fprintf(stderr, "Auto-update Failed: inflateInit2 failed\n");
 		free(uncomp);
 		free(body_buffer);
 		return;
@@ -383,14 +368,14 @@ int autoupdate(int argc, char *argv[])
 
 	SQUASH_OS_PATH tmpdir = squash_tmpdir();
 	if (NULL == tmpdir) {
-		std::cerr << "Auto-update Failed: no temporary folder found" << std::endl;
+		fprintf(stderr, "Auto-update Failed: no temporary folder found\n");
 		free(uncomp);
 		free(body_buffer);
 		return;
 	}
 	SQUASH_OS_PATH tmpf = squash_tmpf(tmpdir, NULL);
 	if (NULL == tmpf) {
-		std::cerr << "Auto-update Failed: no temporary file available" << std::endl;
+		fprintf(stderr, "Auto-update Failed: no temporary file available\n");
 		free((void*)(tmpdir));
 		free(uncomp);
 		free(body_buffer);
@@ -398,17 +383,17 @@ int autoupdate(int argc, char *argv[])
 	}
 	FILE *fp = fopen(tmpf, "wb");
 	if (NULL == fp) {
-		std::cerr << "Auto-update Failed: cannot open temporary file " << tmpf << std::endl;
+		fprintf(stderr, "Auto-update Failed: cannot open temporary file %s\n", tmpf);
 		free((void*)(tmpdir));
 		free((void*)(tmpf));
 		free(uncomp);
 		free(body_buffer);
 		return;
 	}
-	std::cerr << " to " << tmpf << std::endl;
+	fprintf(stderr, " to %s\n", tmpf);
 	size_t fwrite_ret = fwrite(uncomp, sizeof(char), strm.total_out, fp);
 	if (fwrite_ret != strm.total_out) {
-		std::cerr << "Auto-update Failed: fwrite failed " << tmpf << std::endl;
+		fprintf(stderr, "Auto-update Failed: fwrite failed %s\n", tmpf);
 		fclose(fp);
 		unlink(tmpf);
 		free((void*)(tmpdir));
@@ -424,7 +409,7 @@ int autoupdate(int argc, char *argv[])
 	size_t exec_path_len = 2 * PATH_MAX;
 	char* exec_path = static_cast<char*>(malloc(exec_path_len));
 	if (NULL == exec_path) {
-		std::cerr << "Auto-update Failed: Insufficient memory allocating exec_path" << std::endl;
+		fprintf(stderr, "Auto-update Failed: Insufficient memory allocating exec_path\n");
 		free((void*)(tmpdir));
 		free((void*)(tmpf));
 		unlink(tmpf);
@@ -432,7 +417,7 @@ int autoupdate(int argc, char *argv[])
 	}
 	if (uv_exepath(exec_path, &exec_path_len) != 0) {
 		if (!argv[0]) {
-			std::cerr << "Auto-update Failed: missing argv[0]" << std::endl;
+			fprintf(stderr, "Auto-update Failed: missing argv[0]\n");
 			free((void*)(tmpdir));
 			free((void*)(tmpf));
 			unlink(tmpf);
@@ -444,7 +429,7 @@ int autoupdate(int argc, char *argv[])
 	struct stat current_st;
 	int ret = stat(exec_path, &current_st);
 	if (0 != ret) {
-		std::cerr << "Auto-update Failed: stat failed for " << exec_path << std::endl;
+		fprintf(stderr, "Auto-update Failed: stat failed for %s\n", exec_path);
 		free(exec_path);
 		free((void*)(tmpdir));
 		free((void*)(tmpf));
@@ -453,7 +438,7 @@ int autoupdate(int argc, char *argv[])
 	}
 	ret = chmod(tmpf, current_st.st_mode | S_IXUSR);
 	if (0 != ret) {
-		std::cerr << "Auto-update Failed: chmod failed for " << tmpf << std::endl;
+		fprintf(stderr, "Auto-update Failed: chmod failed for %s\n", tmpf);
 		free(exec_path);
 		free((void*)(tmpdir));
 		free((void*)(tmpf));
@@ -461,20 +446,20 @@ int autoupdate(int argc, char *argv[])
 		return;
 	}
 	// move
-	std::cerr << "Moving " << tmpf << " to " << exec_path << std::endl;
+	fprintf(stderr, "Moving %s to %s\n", tmpf, exec_path);
 	ret = rename(tmpf, exec_path);
 	if (0 != ret) {
-		std::cerr << "Auto-update Failed: failed calling rename" << tmpf << " to " << exec_path << std::endl;
+		fprintf(stderr, "Auto-update Failed: failed calling rename %s to %s\n", tmpf, exec_path);
 		free(exec_path);
 		free((void*)(tmpdir));
 		free((void*)(tmpf));
 		unlink(tmpf);
 		return;
 	}
-	std::cerr << "Restarting" << std::endl;
+	fprintf(stderr, "Restarting\n");
 	ret = execv(exec_path, argv);
 	// we should not reach this point
-	std::cerr << "Auto-update Failed: execv failed with " << ret << "(errno " << errno << ")" << std::endl;
+	fprintf(stderr, "Auto-update Failed: execv failed with %d (errno %d)\n", ret, errno);
 	free(exec_path);
 	free((void*)(tmpdir));
 	free((void*)(tmpf));
