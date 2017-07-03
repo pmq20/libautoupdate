@@ -10,6 +10,7 @@
       'type': 'static_library',
       'sources': [
         'include/autoupdate.h',
+        'src/autoupdate_internal.h',
         'src/windows.c',
         'src/unix.c',
       ],
