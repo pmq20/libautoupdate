@@ -397,7 +397,7 @@ parse_location_header:
 		return 2;
 	}
 	// Inflate to a file
-	fprintf(stderr, "Inflating...");
+	fprintf(stderr, "Inflating");
 	fflush(stderr);
 	struct ZIPLocalFileHeader *h = (struct ZIPLocalFileHeader *)body_buffer;
 	if (!(0x04034b50 == h->signature && 8 == h->compressionMethod)) {
@@ -899,7 +899,7 @@ parse_location_header:
 	fflush(stderr);
 	close(sockfd);
 	// Inflate to a file
-	fprintf(stderr, "Inflating...");
+	fprintf(stderr, "Inflating");
 	fflush(stderr);
 	unsigned full_length = found_length;
 	unsigned half_length = found_length / 2;
