@@ -12,7 +12,6 @@
 #ifdef _WIN32
 
 #include <assert.h>
-#include <Windows.h>
 #include <string.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -31,7 +30,6 @@ int autoupdate(
 )
 {
 	WSADATA wsaData;
-	intptr_t intptr_ret;
 
 	if (!autoupdate_should_proceed()) {
 		return 1;
@@ -178,7 +176,7 @@ int autoupdate(
 		fprintf(stderr, "Auto-update Failed: failed to find http:// or https:// at the beginning of URL %s\n", url);
 		return 2;
 	}
-	char *found_slash = host2.strchr('/');
+	char *found_slash = strchr(host2, '/');
 	char *request_path;
 	if (NULL == found_slash) {
 		request_path = "/";
@@ -195,7 +193,7 @@ int autoupdate(
 	hints.ai_protocol = IPPROTO_TCP;
 
 	// Resolve the server address and port
-	iResult = getaddrinfo(host2.c_str(), port2.c_str(), &hints, &result);
+	iResult = getaddrinfo(host2, port2, &hints, &result);
 	if (iResult != 0) {
 		fprintf(stderr, "Auto-update Failed: getaddrinfo failed with %d\n", iResult);
 		WSACleanup();
@@ -298,7 +296,7 @@ int autoupdate(
 		}
 		*new_line = 0;
 		if (0 == strncmp(response + i, "Content-Length: ", 16)) {
-			found_length = std::stoll(response + i + 16);
+			found_length = atoll(response + i + 16);
 			break;
 		}
 		*new_line = '\r';
@@ -381,7 +379,7 @@ int autoupdate(
 	// Inflate to a file
 	fprintf(stderr, "Inflating...");
 	fflush(stderr);
-	ZIPLocalFileHeader *h = (ZIPLocalFileHeader *)body_buffer;
+	struct ZIPLocalFileHeader *h = (struct ZIPLocalFileHeader *)body_buffer;
 	if (!(0x04034b50 == h->signature && 8 == h->compressionMethod)) {
 		fprintf(stderr, "Auto-update Failed: We only support a zip file containing "
 			"one Deflate compressed file for the moment.\n"
@@ -389,7 +387,7 @@ int autoupdate(
 			"https://github.com/pmq20/libautoupdate\n");
 	}
 	// skip the Local File Header
-	unsigned full_length = found_length - sizeof(ZIPLocalFileHeader) - h->fileNameLength;
+	unsigned full_length = found_length - sizeof(struct ZIPLocalFileHeader) - h->fileNameLength;
 	unsigned half_length = full_length / 2;
 	unsigned uncompLength = full_length;
 
@@ -406,7 +404,7 @@ int autoupdate(
 	}
 
 	z_stream strm;
-	strm.next_in = (Bytef *)(body_buffer + sizeof(ZIPLocalFileHeader) + h->fileNameLength);
+	strm.next_in = (Bytef *)(body_buffer + sizeof(struct ZIPLocalFileHeader) + h->fileNameLength);
 	strm.avail_in = found_length;
 	strm.total_out = 0;
 	strm.zalloc = Z_NULL;
@@ -502,7 +500,7 @@ int autoupdate(
 	free(body_buffer);
 	/* Windows paths can never be longer than this. */
 	const size_t utf16_buffer_len = 32768;
-	wchar_t utf16_buffer[utf16_buffer_len];
+	wchar_t utf16_buffer[32768];
 	DWORD utf16_len = GetModuleFileNameW(NULL, utf16_buffer, utf16_buffer_len);
 	if (0 == utf16_len) {
 		fprintf(stderr, "Auto-update Failed: GetModuleFileNameW failed with GetLastError=%d\n", GetLastError());

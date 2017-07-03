@@ -9,6 +9,7 @@
 #define AUTOUPDATE_INTERNAL_H_A40E122A
 
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef _WIN32
 

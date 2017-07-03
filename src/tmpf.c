@@ -15,6 +15,8 @@
 
 #include <Windows.h>
 #include <Shlwapi.h>
+#include <process.h>
+#include <assert.h>
 
 wchar_t* autoupdate_tmpdir()
 {
@@ -61,7 +63,7 @@ wchar_t* autoupdate_tmpf(wchar_t *tmpdir, const char *ext_name)
 	const int squash_win32_buf_sz = 32767;
 	wchar_t squash_win32_buf[32767 + 1];
 	size_t curlen, size_ret;
-	int ret, try_cnt = 0;
+	int try_cnt = 0;
 	srand(time(NULL) * getpid());
 	squash_win32_buf[squash_win32_buf_sz] = 0;
 	while (try_cnt < 3) {
