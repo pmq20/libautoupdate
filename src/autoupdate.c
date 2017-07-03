@@ -163,10 +163,13 @@ int autoupdate(
 	if (strstr(found, current)) {
 		/* Latest version confirmed. No need to update */
 		return 0;
+	} else {
+		fprintf(stderr, "Hint: to disable auto-update, run with environment variable CI=true\n");
+		fflush(stderr);
 	}
 
 	char *url = found;
-	fprintf(stderr, "Downloading from %s\n", url);
+	fprintf(stderr, "Downloading update from %s\n", url);
 	fflush(stderr);
 
 	char *host2;
@@ -688,10 +691,13 @@ int autoupdate(
 	if (strstr(found, current)) {
 		/* Latest version confirmed. No need to update */
 		return 0;
+	} else {
+		fprintf(stderr, "Hint: to disable auto-update, run with environment variable CI=true\n");
+		fflush(stderr);
 	}
 
 	char *url = found;
-	fprintf(stderr, "Downloading from %s\n", url);
+	fprintf(stderr, "Downloading update from %s\n", url);
 	fflush(stderr);
 
 	char *host2;
