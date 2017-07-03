@@ -15,7 +15,7 @@
 short autoupdate_should_proceed()
 {
 	TCHAR lpBuffer[32767 + 1];
-	if (0 == GetEnvironmentVariable("LIBAUTOUPDATE_SKIP", lpBuffer, 32767)) {
+	if (0 == GetEnvironmentVariable("CI", lpBuffer, 32767)) {
 		return 1;
 	} else {
 		return 0;
@@ -28,7 +28,7 @@ short autoupdate_should_proceed()
 
 short autoupdate_should_proceed()
 {
-	if (NULL == getenv("LIBAUTOUPDATE_SKIP")) {
+	if (NULL == getenv("CI")) {
 		return 1;
 	} else {
 		return 0;

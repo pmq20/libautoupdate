@@ -30,7 +30,7 @@ Otherwise, it returns one of the following integers to indicate the situation:
 |  Return Value  | Indication                                                                                  |
 |:--------------:|---------------------------------------------------------------------------------------------|
 |        0       | Latest version confirmed. No need to update                                                 |
-|        1       | Auto-update shall not proceed due to environment variable `LIBAUTOUPDATE_SKIP` being set    |
+|        1       | Auto-update shall not proceed due to environment variable `CI` being set    |
 |        2       | Auto-update process failed prematually and detailed errors are printed to stderr            |
 |        3       | Failed to restart after replacing itself with the new version                               |
 
