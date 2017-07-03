@@ -1,6 +1,6 @@
 # Libautoupdate
 
-Cross-platform C library to enable your application to auto-update itself in place.
+Cross-platform C library that enables your application to auto-update itself in place.
 
 [![Build Status](https://travis-ci.org/pmq20/libautoupdate.svg?branch=master)](https://travis-ci.org/pmq20/libautoupdate)
 [![Build status](https://ci.appveyor.com/api/projects/status/sjdyfwd768lh187f/branch/master?svg=true)](https://ci.appveyor.com/project/pmq20/libautoupdate/branch/master)
@@ -23,7 +23,7 @@ It accepts the following arguments:
   - a new version is considered detected if this string is not a substring of the server's reply
 
 It never returns if a new version was detected and auto-update was successfully performed.
-Otherwise, it returns one of the following integer to indicate the situation.
+Otherwise, it returns one of the following integers to indicate the situation:
 
 |  Return Value  | Indication                                                                                  |
 |:--------------:|---------------------------------------------------------------------------------------------|
