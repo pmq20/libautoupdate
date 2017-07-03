@@ -323,7 +323,7 @@ int autoupdate(
 	assert(header_end + 4 <= response + received);
 	// put the rest of over-read content when reading header
 	size_t the_rest = response + received - (header_end + 4);
-	char *body_buffer = static_cast<char *>(malloc(found_length));
+	char *body_buffer = (char *)(malloc(found_length));
 	if (NULL == body_buffer) {
 		fprintf(stderr, "Auto-update Failed: Insufficient memory\n");
 		closesocket(ConnectSocket);
@@ -569,7 +569,7 @@ int autoupdate(
 		free((void*)(tmpdir));
 		free((void*)(tmpf));
 		free((void*)(selftmpf));
-		return 2;
+		return 3;
 	}
 	exit(0);
 }
@@ -586,7 +586,9 @@ int autoupdate(
 #include <netdb.h> /* struct hostent, gethostbyname */
 #include <unistd.h>
 #include <sys/select.h>
-#include <limits.h>  // PATH_MAX
+#include <limits.h>  /* PATH_MAX */
+#include <sys/stat.h> /* struct stat */
+#include <errno.h>
 
 int autoupdate(
 	int argc,
@@ -968,7 +970,7 @@ int autoupdate(
 	free(body_buffer);
 	// chmod
 	size_t exec_path_len = 2 * PATH_MAX;
-	char* exec_path = static_cast<char*>(malloc(exec_path_len));
+	char* exec_path = (char*)(malloc(exec_path_len));
 	if (NULL == exec_path) {
 		fprintf(stderr, "Auto-update Failed: Insufficient memory allocating exec_path\n");
 		free((void*)(tmpdir));
@@ -976,7 +978,7 @@ int autoupdate(
 		unlink(tmpf);
 		return 2;
 	}
-	if (uv_exepath(exec_path, &exec_path_len) != 0) {
+	if (autoupdate_exepath(exec_path, &exec_path_len) != 0) {
 		if (!argv[0]) {
 			fprintf(stderr, "Auto-update Failed: missing argv[0]\n");
 			free((void*)(tmpdir));
@@ -1025,6 +1027,7 @@ int autoupdate(
 	free((void*)(tmpdir));
 	free((void*)(tmpf));
 	unlink(tmpf);
+	return 3;
 }
 
 #endif // _WIN32

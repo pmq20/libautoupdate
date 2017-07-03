@@ -8,6 +8,8 @@
 #ifndef AUTOUPDATE_INTERNAL_H_A40E122A
 #define AUTOUPDATE_INTERNAL_H_A40E122A
 
+#include <stddef.h>
+
 #ifdef _WIN32
 
 #define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop) )
@@ -35,6 +37,7 @@ wchar_t* autoupdate_tmpf(wchar_t *tmpdir, const char *ext_name);
 
 char* autoupdate_tmpdir();
 char* autoupdate_tmpf(char *tmpdir, const char *ext_name);
+int autoupdate_exepath(char* buffer, size_t* size);
 
 #endif // _WIN32
 

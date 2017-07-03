@@ -98,6 +98,8 @@ wchar_t* autoupdate_tmpf(wchar_t *tmpdir, const char *ext_name)
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <string.h>
+#include <stdio.h>
 
 char* autoupdate_tmpdir()
 {
