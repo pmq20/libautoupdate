@@ -406,7 +406,7 @@ int autoupdate(
 	}
 
 	z_stream strm;
-	strm.next_in = (z_const Bytef *)(body_buffer + sizeof(ZIPLocalFileHeader) + h->fileNameLength);
+	strm.next_in = (Bytef *)(body_buffer + sizeof(ZIPLocalFileHeader) + h->fileNameLength);
 	strm.avail_in = found_length;
 	strm.total_out = 0;
 	strm.zalloc = Z_NULL;
@@ -874,7 +874,7 @@ int autoupdate(
 	}
 
 	z_stream strm;
-	strm.next_in = (z_const Bytef *)body_buffer;
+	strm.next_in = (Bytef *)body_buffer;
 	strm.avail_in = found_length;
 	strm.total_out = 0;
 	strm.zalloc = Z_NULL;
