@@ -499,9 +499,9 @@ int autoupdate(
 	free(uncomp);
 	free(body_buffer);
 	/* Windows paths can never be longer than this. */
-	const size_t utf16_buffer_len = 32768;
-	wchar_t utf16_buffer[32768];
-	DWORD utf16_len = GetModuleFileNameW(NULL, utf16_buffer, utf16_buffer_len);
+	const size_t exec_path_len = 32768;
+	wchar_t exec_path[32768];
+	DWORD utf16_len = GetModuleFileNameW(NULL, exec_path, exec_path_len);
 	if (0 == utf16_len) {
 		fprintf(stderr, "Auto-update Failed: GetModuleFileNameW failed with GetLastError=%d\n", GetLastError());
 		DeleteFileW(tmpf);
@@ -509,7 +509,7 @@ int autoupdate(
 		free((void*)(tmpf));
 		return 2;
 	}
-	// Moving
+	// Backup
 	wchar_t *selftmpf = autoupdate_tmpf(tmpdir, "exe");
 	if (NULL == selftmpf) {
 		fprintf(stderr, "Auto-update Failed: no temporary file available\n");
@@ -518,30 +518,31 @@ int autoupdate(
 		free((void*)(tmpf));
 		return 2;
 	}
-	fprintf(stderr, "Moving %S to %S\n", utf16_buffer, selftmpf);
-	BOOL ret = MoveFileW(utf16_buffer, selftmpf);
+	fprintf(stderr, "Moving the old version from %S to %S\n", exec_path, selftmpf);
+	BOOL ret = MoveFileW(exec_path, selftmpf);
 	if (!ret) {
 		fprintf(stderr, "Auto-update Failed: MoveFileW failed with GetLastError=%d\n", GetLastError());
 		DeleteFileW(tmpf);
-		DeleteFileW(selftmpf);
 		free((void*)(tmpdir));
 		free((void*)(tmpf));
 		free((void*)(selftmpf));
 		return 2;
 	}
-	fprintf(stderr, "Moving %S to %S \n", tmpf, utf16_buffer);
-	ret = MoveFileW(tmpf, utf16_buffer);
+	fprintf(stderr, "A backup of the old version has been kept at %S", selftmpf);
+	fprintf(stderr, "Should anything bad happen after this point, you could still put it back.\n");
+	// Move the new version into the original place
+	fprintf(stderr, "Moving the new version from %S to %S \n", tmpf, exec_path);
+	ret = MoveFileW(tmpf, exec_path);
 	if (!ret) {
 		fprintf(stderr, "Auto-update Failed: MoveFileW failed with GetLastError=%d\n", GetLastError());
 		DeleteFileW(tmpf);
-		DeleteFileW(selftmpf);
 		free((void*)(tmpdir));
 		free((void*)(tmpf));
 		free((void*)(selftmpf));
 		return 2;
 	}
 	// Restarting
-	fprintf(stderr, "Restarting\n");
+	fprintf(stderr, "Restarting...\n");
 	fflush(stderr);
 	STARTUPINFO si;
 	PROCESS_INFORMATION pi;
@@ -563,7 +564,6 @@ int autoupdate(
 	if (!ret) {
 		fprintf(stderr, "Auto-update Failed: CreateProcess failed with GetLastError=%d\n", GetLastError());
 		DeleteFileW(tmpf);
-		DeleteFileW(selftmpf);
 		free((void*)(tmpdir));
 		free((void*)(tmpf));
 		free((void*)(selftmpf));
@@ -1006,8 +1006,31 @@ int autoupdate(
 		unlink(tmpf);
 		return 2;
 	}
-	// move
-	fprintf(stderr, "Moving %s to %s\n", tmpf, exec_path);
+	// Backup
+	char *selftmpf = autoupdate_tmpf(tmpdir, NULL);
+	if (NULL == selftmpf) {
+		fprintf(stderr, "Auto-update Failed:  no temporary file available\n");
+		free(exec_path);
+		free((void*)(tmpdir));
+		free((void*)(tmpf));
+		unlink(tmpf);
+		return 2;
+	}
+	fprintf(stderr, "Moving the old version from %s to %s\n", exec_path, selftmpf);
+	ret = rename(exec_path, selftmpf);
+	if (0 != ret) {
+		fprintf(stderr, "Auto-update Failed: failed calling rename %s to %s\n", tmpf, exec_path);
+		free(exec_path);
+		free((void*)(tmpdir));
+		free((void*)(tmpf));
+		free((void*)(selftmpf));
+		unlink(tmpf);
+		return 2;
+	}
+	fprintf(stderr, "A backup of the old version has been kept at %s", selftmpf);
+	fprintf(stderr, "Should anything bad happen after this point, you could still put it back.\n");
+	// Move the new version into the original place
+	fprintf(stderr, "Moving the new version from %s to %s\n", tmpf, exec_path);
 	ret = rename(tmpf, exec_path);
 	if (0 != ret) {
 		fprintf(stderr, "Auto-update Failed: failed calling rename %s to %s\n", tmpf, exec_path);
@@ -1017,7 +1040,7 @@ int autoupdate(
 		unlink(tmpf);
 		return 2;
 	}
-	fprintf(stderr, "Restarting\n");
+	fprintf(stderr, "Restarting...\n");
 	ret = execv(exec_path, argv);
 	// we should not reach this point
 	fprintf(stderr, "Auto-update Failed: execv failed with %d (errno %d)\n", ret, errno);
