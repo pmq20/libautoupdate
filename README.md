@@ -25,12 +25,12 @@ It accepts the following arguments:
 It never returns if a new version was detected and auto-update was successfully performed.
 Otherwise, it returns one of the following integer to indicate the situation.
 
-|  Return Value  | Indication   |
-|:--------------:|--------------|
-|        0       | Latest version confirmed. No need to update.
-|        1       | Auto-update shall not proceed due to environment variable `LIBAUTOUPDATE_SKIP` being set. |
-|        2       | Auto-update process failed prematually and detailed errors are printed to stderr.  |
-|        3       | Failed to restart after replacing itself with the new version |
+|  Return Value  | Indication                                                                                  |
+|:--------------:|---------------------------------------------------------------------------------------------|
+|        0       | Latest version confirmed. No need to update                                                 |
+|        1       | Auto-update shall not proceed due to environment variable `LIBAUTOUPDATE_SKIP` being set    |
+|        2       | Auto-update process failed prematually and detailed errors are printed to stderr            |
+|        3       | Failed to restart after replacing itself with the new version                               |
 
 ## Communication
 
@@ -38,7 +38,7 @@ Otherwise, it returns one of the following integer to indicate the situation.
 
 Libautoupdate first makes a HTTP/1.0 HEAD request to the server, in order to peek the latest version string.
 
-    Libautoupdate <-- HTTP/1.0 HEAD request --> Server
+    Libautoupdate -- HTTP/1.0 HEAD request --> Server
 
 The server is expected to repond with `HTTP 302 Found` and provide a `Location` header.
 
@@ -49,7 +49,7 @@ It proceeds to Round 2 if the current version string is NOT a sub-string of the 
 
 Libautoupdate makes a full HTTP/1.0 GET request to the `Location` header of the last round.
 
-    Libautoupdate <-- HTTP/1.0 GET request --> Server
+    Libautoupdate -- HTTP/1.0 GET request --> Server
 
 The server is expected to respond with `200 OK` transferring the new release itself.
 
@@ -119,3 +119,7 @@ int main(int argc, char *argv[])
 	*/
 }
 ```
+
+## See Also
+
+- [Enclose.IO](https://github.com/pmq20/enclose-io): Cloud-based service that compiles your application into a single executable with auto-update.
