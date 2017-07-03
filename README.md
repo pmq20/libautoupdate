@@ -122,4 +122,4 @@ int main(int argc, char *argv[])
 
 ## See Also
 
-- [Enclose.IO](https://github.com/pmq20/enclose-io): Cloud-based service that compiles your application into a single executable with auto-update.
+- [Enclose.IO](https://github.com/pmq20/enclose-io): cloud-based service that compiles your application into a single executable with auto-update.
