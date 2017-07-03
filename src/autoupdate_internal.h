@@ -28,7 +28,14 @@ PACK(
 	uint16_t extraFieldLength; // unsupported
 });
 
+wchar_t* autoupdate_tmpdir();
+wchar_t* autoupdate_tmpf(wchar_t *tmpdir, const char *ext_name);
+
 #else
+
+char* autoupdate_tmpdir();
+char* autoupdate_tmpf(char *tmpdir, const char *ext_name);
+
 #endif // _WIN32
 
 short autoupdate_should_proceed();
