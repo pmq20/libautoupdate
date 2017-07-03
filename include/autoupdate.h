@@ -16,7 +16,8 @@ int autoupdate(
 	wchar_t *wargv[],
 	const char *host,
 	const char *port,
-	const char *path
+	const char *path,
+	const char *current
 );
 
 #else
@@ -27,7 +28,8 @@ int autoupdate(
 	char *argv[],
 	const char *host,
 	uint16_t port,
-	const char *path
+	const char *path,
+	const char *current
 );
 
 #endif // _WIN32

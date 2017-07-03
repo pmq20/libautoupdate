@@ -10,6 +10,7 @@
 #include "autoupdate.h"
 #include "zlib.h"
 
+#include <assert.h>
 #include <stdio.h> /* printf, sprintf */
 #include <stdlib.h> /* exit */
 #include <unistd.h> /* read, write, close */
@@ -35,7 +36,8 @@ int autoupdate(
 	char *argv[],
 	const char *host,
 	uint16_t port,
-	const char *path
+	const char *path,
+	const char *current
 )
 {
 	struct hostent *server;
@@ -64,7 +66,7 @@ int autoupdate(
 	memcpy(&serv_addr.sin_addr.s_addr, server->h_addr, server->h_length);
 	if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
 		close(sockfd);
-		fprintf(stderr, "Auto-update Failed: connect failed on %s and port %h\n", host, port);
+		fprintf(stderr, "Auto-update Failed: connect failed on %s and port %d\n", host, port);
 		return 2;
 	}
 	if (5 != write(sockfd, "HEAD ", 5) ||
@@ -139,7 +141,7 @@ int autoupdate(
 		fprintf(stderr, "Auto-update Failed: failed to find http:// or https:// at the beginning of URL %s\n", url);
 		return 2;
 	}
-	char *found_slash = host2.strchr('/');
+	char *found_slash = strchr(host2, '/');
 	char *request_path;
 	if (NULL == found_slash) {
 		request_path = "/";
@@ -152,7 +154,7 @@ int autoupdate(
 		fprintf(stderr, "Auto-update Failed: socket creation failed\n");
 		return 2;
 	}
-	server = gethostbyname(host2.c_str());
+	server = gethostbyname(host2);
 	if (server == NULL) {
 		close(sockfd);
 		fprintf(stderr, "Auto-update Failed: gethostbyname failed for %s\n", host2);
@@ -164,7 +166,7 @@ int autoupdate(
 	memcpy(&serv_addr.sin_addr.s_addr, server->h_addr, server->h_length);
 	if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
 		close(sockfd);
-		fprintf(stderr, "Auto-update Failed: connect failed on %s and port %h\n", host2, port2);
+		fprintf(stderr, "Auto-update Failed: connect failed on %s and port %d\n", host2, port2);
 		return 2;
 	}
 	if (NULL != found_slash) {
@@ -182,7 +184,7 @@ int autoupdate(
 	}
 	if (6 != write(sockfd, "Host: ", 6) ||
 		strlen(host2) != write(sockfd, host2, strlen(host2)) ||
-		4 != write(sockfd, "\r\n\r\n", 4) {
+		4 != write(sockfd, "\r\n\r\n", 4)) {
 			close(sockfd);
 			fprintf(stderr, "Auto-update Failed: write failed\n");
 			return 2;
@@ -232,7 +234,7 @@ int autoupdate(
 		}
 		*new_line = 0;
 		if (0 == strncmp(response + i, "Content-Length: ", 16)) {
-			found_length = stoll(response + i + 16);
+			found_length = atoll(response + i + 16);
 			break;
 		}
 		*new_line = '\r';
@@ -255,7 +257,7 @@ int autoupdate(
 	assert(header_end + 4 <= response + received);
 	// put the rest of over-read content when reading header
 	size_t the_rest = response + received - (header_end + 4);
-	char *body_buffer = static_cast<char *>(malloc(found_length));
+	char *body_buffer = (char *)(malloc(found_length));
 	if (NULL == body_buffer) {
 		close(sockfd);
 		fprintf(stderr, "Auto-update Failed: Insufficient memory\n");
@@ -266,7 +268,7 @@ int autoupdate(
 	char *body_buffer_end = body_buffer + found_length;
 	// read the remaining body
 	received = the_rest;
-	fprintf(stderr, "\r%lld / %lld bytes finished (%d%%)",  received, found_length, received*100LL/found_length);
+	fprintf(stderr, "\r%lld / %lld bytes finished (%lld%%)",  received, found_length, received*100LL/found_length);
 	fflush(stderr);
 	while (received < found_length) {
 		size_t space = 100 * 1024;
@@ -286,7 +288,7 @@ int autoupdate(
 		}
 		received += bytes;
 		body_buffer_ptr += bytes;
-		fprintf(stderr, "\r%lld / %lld bytes finished (%d%%)",  received, found_length, received*100LL/found_length);
+		fprintf(stderr, "\r%lld / %lld bytes finished (%lld%%)",  received, found_length, received*100LL/found_length);
 		fflush(stderr);
 	}
 	if (received != found_length) {
@@ -319,7 +321,7 @@ int autoupdate(
 	strm.zalloc = Z_NULL;
 	strm.zfree = Z_NULL;
 	
-	bool done = false ;
+	short done = 0;
 
 	if (inflateInit2(&strm, (16+MAX_WBITS)) != Z_OK) {
 		free(uncomp);
@@ -349,8 +351,10 @@ int autoupdate(
 		strm.avail_out = uncompLength - strm.total_out;
 		
 		// Inflate another chunk.
-		int err = inflate (&strm, Z_SYNC_FLUSH);
-		if (err == Z_STREAM_END) done = true;
+		int err = inflate(&strm, Z_SYNC_FLUSH);
+		if (err == Z_STREAM_END) {
+			done = 1;
+		}
 		else if (err != Z_OK)  {
 			fprintf(stderr, "Auto-update Failed: inflate failed with %d\n", err);
 			free(uncomp);

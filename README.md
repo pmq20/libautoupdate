@@ -10,7 +10,7 @@ Cross-platform C library to enable your application to auto-update itself in pla
 There is only one single API, i.e. `autoupdate()`.
 
 ```C
-int autoupdate(argc, argv, host, port, path)
+int autoupdate(argc, argv, host, port, path, current)
 ```
 
 It accepts the following arguments:
@@ -20,6 +20,7 @@ It accepts the following arguments:
 - `port` is the port of the server, which is a string on Windows and a 16-bit integer on UNIX
 - `path` is the paramater passed to the HTTP/1.0 HEAD request of the Round 1
 - `current` is the current version string to be compared with what is returned from the server
+  - a new version is considered detected if this string is not a substring of the server's reply
 
 It never returns if a new version was detected and auto-update was successfully performed.
 Otherwise, it returns one of the following integer to indicate the situation.
@@ -57,8 +58,9 @@ Based on the `Content-Type` header received, an addtional inflation operation mi
 
 ## Self-replacing
 
-After all the above procedures the data is ready to proceed with a self-replacing.
-The program replaces itself in-place with the help of the system temporary directory,
+After 2 rounds of communication with the server,
+libautoupdate will then proceeds with a self-replacing process,
+i.e. the program replaces itself in-place with the help of the system temporary directory,
 after which it restarts itself with the new release.
 
 ## Examples

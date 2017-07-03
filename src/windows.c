@@ -53,7 +53,8 @@ int autoupdate(
 	wchar_t *wargv[],
 	const char *host,
 	const char *port,
-	const char *path
+	const char *path,
+	const char *current
 )
 {
 	WSADATA wsaData;
@@ -361,7 +362,7 @@ int autoupdate(
 	char *body_buffer_end = body_buffer + found_length;
 	// read the remaining body
 	received = the_rest;
-	fprintf(stderr, "\r%lld / %lld bytes finished (%d%%)",  received, found_length, received*100LL/found_length);
+	fprintf(stderr, "\r%lld / %lld bytes finished (%lld%%)",  received, found_length, received*100LL/found_length);
 	fflush(stderr);
 	while (received < found_length) {
 		size_t space = 100 * 1024;
@@ -382,7 +383,7 @@ int autoupdate(
 		}
 		received += bytes;
 		body_buffer_ptr += bytes;
-		fprintf(stderr, "\r%lld / %lld bytes finished (%d%%)",  received, found_length, received*100LL/found_length);
+		fprintf(stderr, "\r%lld / %lld bytes finished (%lld%%)",  received, found_length, received*100LL/found_length);
 		fflush(stderr);
 	}
 	if (received != found_length) {
@@ -438,7 +439,7 @@ int autoupdate(
 	strm.zalloc = Z_NULL;
 	strm.zfree = Z_NULL;
 
-	bool done = false;
+	short done = 0;
 
 	if (inflateInit2(&strm, -MAX_WBITS) != Z_OK) {
 		free(uncomp);
@@ -470,7 +471,7 @@ int autoupdate(
 		// Inflate another chunk.
 		int err = inflate(&strm, Z_SYNC_FLUSH);
 		if (err == Z_STREAM_END) {
-			done = true;
+			done = 1;
 		}
 		else if (err != Z_OK) {
 			fprintf(stderr, "Auto-update Failed: inflate failed with %d\n", err);
