@@ -67,7 +67,7 @@ int autoupdate(
 	int iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
 	if (iResult != 0) {
 		fprintf(stderr, "Auto-update Failed: WSAStartup failed with %d\n", iResult);
-		return;
+		return 2;
 	}
 
 	struct addrinfo *result = NULL,
@@ -84,7 +84,7 @@ int autoupdate(
 	if (iResult != 0) {
 		fprintf(stderr, "Auto-update Failed: getaddrinfo failed with %d\n", iResult);
 		WSACleanup();
-		return;
+		return 2;
 	}
 
 	SOCKET ConnectSocket = INVALID_SOCKET;
@@ -101,7 +101,7 @@ int autoupdate(
 		fprintf(stderr, "Auto-update Failed: Error at socket() with %d\n", WSAGetLastError());
 		freeaddrinfo(result);
 		WSACleanup();
-		return;
+		return 2;
 	}
 
 	// Connect to server.
@@ -114,7 +114,7 @@ int autoupdate(
 	if (ConnectSocket == INVALID_SOCKET) {
 		fprintf(stderr, "Auto-update Failed: connect failed on %s and port %s\n", host, port);
 		WSACleanup();
-		return;
+		return 2;
 	}
 	if (5 != send(ConnectSocket, "HEAD ", 5, 0) ||
 	    strlen(path) != send(ConnectSocket, path, strlen(path), 0) ||
@@ -122,7 +122,7 @@ int autoupdate(
 		fprintf(stderr, "Auto-update Failed: send failed with %d\n", WSAGetLastError());
 		closesocket(ConnectSocket);
 		WSACleanup();
-		return;
+		return 2;
 	}
 
 	char response[1024 * 10 + 1]; // 10KB
@@ -135,7 +135,7 @@ int autoupdate(
 			fprintf(stderr, "Auto-update Failed: recv failed with %d\n", WSAGetLastError());
 			closesocket(ConnectSocket);
 			WSACleanup();
-			return;
+			return 2;
 		}
 		if (bytes == 0) {
 			/* EOF */
@@ -148,7 +148,7 @@ int autoupdate(
 		fprintf(stderr, "Auto-update Failed: read causes buffer full\n");
 		closesocket(ConnectSocket);
 		WSACleanup();
-		return;
+		return 2;
 	}
 
 	// shutdown the connection for sending since no more data will be sent
@@ -158,7 +158,7 @@ int autoupdate(
 		fprintf(stderr, "Auto-update Failed: shutdown failed with %d\n", WSAGetLastError());
 		closesocket(ConnectSocket);
 		WSACleanup();
-		return;
+		return 2;
 	}
 
 	assert(received < total);
@@ -183,7 +183,7 @@ int autoupdate(
 	}
 	if (!found) {
 		fprintf(stderr, "Auto-update Failed: failed to find a Location header\n");
-		return;
+		return 2;
 	}
 	if (strstr(found, current)) {
 		/* Latest version confirmed. No need to update */
@@ -202,7 +202,7 @@ int autoupdate(
 		host2 = url + 7;
 	} else {
 		fprintf(stderr, "Auto-update Failed: failed to find http:// or https:// at the beginning of URL %s\n", url);
-		return;
+		return 2;
 	}
 	char *found_slash = host2.strchr('/');
 	char *request_path;
@@ -225,7 +225,7 @@ int autoupdate(
 	if (iResult != 0) {
 		fprintf(stderr, "Auto-update Failed: getaddrinfo failed with %d\n", iResult);
 		WSACleanup();
-		return;
+		return 2;
 	}
 
 	ConnectSocket = INVALID_SOCKET;
@@ -241,7 +241,7 @@ int autoupdate(
 		fprintf(stderr, "Auto-update Failed: Error at socket() with %d\n", WSAGetLastError());
 		freeaddrinfo(result);
 		WSACleanup();
-		return;
+		return 2;
 	}
 	// Connect to server.
 	iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
@@ -253,7 +253,7 @@ int autoupdate(
 	if (ConnectSocket == INVALID_SOCKET) {
 		fprintf(stderr, "Auto-update Failed: connect failed on %s and port %s\n", host2, port2);
 		WSACleanup();
-		return;
+		return 2;
 	}
 	if (NULL != found_slash) {
 		*found_slash = '/';
@@ -264,7 +264,7 @@ int autoupdate(
 			fprintf(stderr, "Auto-update Failed: send failed with %d\n", WSAGetLastError());
 			closesocket(ConnectSocket);
 			WSACleanup();
-			return;
+			return 2;
 	}
 	if (NULL != found_slash) {
 		*found_slash = 0;
@@ -275,7 +275,7 @@ int autoupdate(
 			fprintf(stderr, "Auto-update Failed: send failed with %d\n", WSAGetLastError());
 			closesocket(ConnectSocket);
 			WSACleanup();
-			return;
+			return 2;
 	}
 
 	// Read the header
@@ -289,7 +289,7 @@ int autoupdate(
 			fprintf(stderr, "Auto-update Failed: recv failed with %d\n", WSAGetLastError());
 			closesocket(ConnectSocket);
 			WSACleanup();
-			return;
+			return 2;
 		}
 		if (bytes == 0) {
 			/* EOF */
@@ -307,7 +307,7 @@ int autoupdate(
 		fprintf(stderr, "Auto-update Failed: failed to find the end of the response header\n");
 		closesocket(ConnectSocket);
 		WSACleanup();
-		return;
+		return 2;
 	}
 	assert(received <= total);
 	// Parse the header
@@ -334,13 +334,13 @@ int autoupdate(
 		fprintf(stderr, "Auto-update Failed: failed to find a Content-Length header\n");
 		closesocket(ConnectSocket);
 		WSACleanup();
-		return;
+		return 2;
 	}
 	if (0 == found_length) {
 		fprintf(stderr, "Auto-update Failed: found a Content-Length header of zero\n");
 		closesocket(ConnectSocket);
 		WSACleanup();
-		return;
+		return 2;
 	}
 	assert(found_length > 0);
 	// Read the body
@@ -354,7 +354,7 @@ int autoupdate(
 		fprintf(stderr, "Auto-update Failed: Insufficient memory\n");
 		closesocket(ConnectSocket);
 		WSACleanup();
-		return;
+		return 2;
 	}
 	memcpy(body_buffer, (header_end + 4), the_rest);
 	char *body_buffer_ptr = body_buffer + the_rest;
@@ -374,7 +374,7 @@ int autoupdate(
 			free(body_buffer);
 			closesocket(ConnectSocket);
 			WSACleanup();
-			return;
+			return 2;
 		}
 		if (bytes == 0) {
 			/* EOF */
@@ -391,7 +391,7 @@ int autoupdate(
 		closesocket(ConnectSocket);
 		WSACleanup();
 		free(body_buffer);
-		return;
+		return 2;
 	}
 	fprintf(stderr, "\n");
 	fflush(stderr);
@@ -402,7 +402,7 @@ int autoupdate(
 		fprintf(stderr, "Auto-update Failed: shutdown failed with %d\n", WSAGetLastError());
 		closesocket(ConnectSocket);
 		WSACleanup();
-		return;
+		return 2;
 	}
 	// Inflate to a file
 	fprintf(stderr, "Inflating...");
@@ -428,7 +428,7 @@ int autoupdate(
 	if (NULL == uncomp) {
 		fprintf(stderr, "Auto-update Failed: Insufficient memory\n");
 		free(body_buffer);
-		return;
+		return 2;
 	}
 
 	z_stream strm;
@@ -444,7 +444,7 @@ int autoupdate(
 		free(uncomp);
 		free(body_buffer);
 		fprintf(stderr, "Auto-update Failed: inflateInit2 failed\n");
-		return;
+		return 2;
 	}
 
 	while (!done) {
@@ -456,7 +456,7 @@ int autoupdate(
 				free(uncomp);
 				free(body_buffer);
 				fprintf(stderr, "Auto-update Failed: calloc failed\n");
-				return;
+				return 2;
 			}
 			memcpy(uncomp2, uncomp, uncompLength);
 			uncompLength += half_length;
@@ -476,7 +476,7 @@ int autoupdate(
 			fprintf(stderr, "Auto-update Failed: inflate failed with %d\n", err);
 			free(uncomp);
 			free(body_buffer);
-			return;
+			return 2;
 		}
 	}
 
@@ -484,7 +484,7 @@ int autoupdate(
 		fprintf(stderr, "Auto-update Failed: inflateInit2 failed\n");
 		free(uncomp);
 		free(body_buffer);
-		return;
+		return 2;
 	}
 
 	SQUASH_OS_PATH tmpdir = squash_tmpdir();
@@ -492,7 +492,7 @@ int autoupdate(
 		fprintf(stderr, "Auto-update Failed: no temporary folder found\n");
 		free(uncomp);
 		free(body_buffer);
-		return;
+		return 2;
 	}
 	SQUASH_OS_PATH tmpf = squash_tmpf(tmpdir, "exe");
 	if (NULL == tmpf) {
@@ -500,7 +500,7 @@ int autoupdate(
 		free((void*)(tmpdir));
 		free(uncomp);
 		free(body_buffer);
-		return;
+		return 2;
 	}
 	FILE *fp = _wfopen(tmpf, L"wb");
 	if (NULL == fp) {
@@ -509,7 +509,7 @@ int autoupdate(
 		free((void*)(tmpf));
 		free(uncomp);
 		free(body_buffer);
-		return;
+		return 2;
 	}
 	fprintf(stderr, " to %S\n", tmpf);
 	size_t fwrite_ret = fwrite(uncomp, sizeof(char), strm.total_out, fp);
@@ -521,7 +521,7 @@ int autoupdate(
 		free((void*)(tmpf));
 		free(uncomp);
 		free(body_buffer);
-		return;
+		return 2;
 	}
 	fclose(fp);
 	free(uncomp);
@@ -535,7 +535,7 @@ int autoupdate(
 		DeleteFileW(tmpf);
 		free((void*)(tmpdir));
 		free((void*)(tmpf));
-		return;
+		return 2;
 	}
 	// Moving
 	SQUASH_OS_PATH selftmpf = squash_tmpf(tmpdir, "exe");
@@ -544,7 +544,7 @@ int autoupdate(
 		DeleteFileW(tmpf);
 		free((void*)(tmpdir));
 		free((void*)(tmpf));
-		return;
+		return 2;
 	}
 	fprintf(stderr, "Moving %S to %S\n", utf16_buffer, selftmpf);
 	BOOL ret = MoveFileW(utf16_buffer, selftmpf);
@@ -555,7 +555,7 @@ int autoupdate(
 		free((void*)(tmpdir));
 		free((void*)(tmpf));
 		free((void*)(selftmpf));
-		return;
+		return 2;
 	}
 	fprintf(stderr, "Moving %S to %S \n", tmpf, utf16_buffer);
 	ret = MoveFileW(tmpf, utf16_buffer);
@@ -566,7 +566,7 @@ int autoupdate(
 		free((void*)(tmpdir));
 		free((void*)(tmpf));
 		free((void*)(selftmpf));
-		return;
+		return 2;
 	}
 	// Restarting
 	fprintf(stderr, "Restarting\n");
@@ -595,7 +595,7 @@ int autoupdate(
 		free((void*)(tmpdir));
 		free((void*)(tmpf));
 		free((void*)(selftmpf));
-		return;
+		return 2;
 	}
 	exit(0);
 }

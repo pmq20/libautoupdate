@@ -50,13 +50,13 @@ int autoupdate(
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
 		fprintf(stderr, "Auto-update Failed: socket creation failed\n");
-		return;
+		return 2;
 	}
 	server = gethostbyname(host);
 	if (server == NULL) {
 		close(sockfd);
 		fprintf(stderr, "Auto-update Failed: gethostbyname failed for %s\n", host);
-		return;
+		return 2;
 	}
 	memset(&serv_addr, 0, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
@@ -65,14 +65,14 @@ int autoupdate(
 	if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
 		close(sockfd);
 		fprintf(stderr, "Auto-update Failed: connect failed on %s and port %h\n", host, port);
-		return;
+		return 2;
 	}
 	if (5 != write(sockfd, "HEAD ", 5) ||
 	    strlen(path) != write(sockfd, path, strlen(path)) ||
 	    13 != write(sockfd, " HTTP/1.0\r\n\r\n", 13)) {
 		close(sockfd);
 		fprintf(stderr, "Auto-update Failed: write failed\n");
-		return;
+		return 2;
 	}
 	total = sizeof(response) - 2;
 	long long received = 0;
@@ -81,7 +81,7 @@ int autoupdate(
 		if (bytes < 0) {
 			close(sockfd);
 			fprintf(stderr, "Auto-update Failed: read failed\n");
-			return;
+			return 2;
 		}
 		if (bytes == 0) {
 			/* EOF */
@@ -93,7 +93,7 @@ int autoupdate(
 	if (received == total) {
 		close(sockfd);
 		fprintf(stderr, "Auto-update Failed: read causes buffer full\n");
-		return;
+		return 2;
 	}
 	close(sockfd);
 	assert(received < total);
@@ -118,7 +118,7 @@ int autoupdate(
 	}
 	if (!found) {
 		fprintf(stderr, "Auto-update Failed: failed to find a Location header\n");
-		return;
+		return 2;
 	}
 	if (strstr(found, current)) {
 		/* Latest version confirmed. No need to update */
@@ -137,7 +137,7 @@ int autoupdate(
 		host2 = url + 7;
 	} else {
 		fprintf(stderr, "Auto-update Failed: failed to find http:// or https:// at the beginning of URL %s\n", url);
-		return;
+		return 2;
 	}
 	char *found_slash = host2.strchr('/');
 	char *request_path;
@@ -150,13 +150,13 @@ int autoupdate(
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
 		fprintf(stderr, "Auto-update Failed: socket creation failed\n");
-		return;
+		return 2;
 	}
 	server = gethostbyname(host2.c_str());
 	if (server == NULL) {
 		close(sockfd);
 		fprintf(stderr, "Auto-update Failed: gethostbyname failed for %s\n", host2);
-		return;
+		return 2;
 	}
 	memset(&serv_addr, 0, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
@@ -165,7 +165,7 @@ int autoupdate(
 	if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
 		close(sockfd);
 		fprintf(stderr, "Auto-update Failed: connect failed on %s and port %h\n", host2, port2);
-		return;
+		return 2;
 	}
 	if (NULL != found_slash) {
 		*found_slash = '/';
@@ -175,7 +175,7 @@ int autoupdate(
 		11 != write(sockfd, " HTTP/1.0\r\n", 11)) {
 			close(sockfd);
 			fprintf(stderr, "Auto-update Failed: write failed\n");
-			return;
+			return 2;
 	}
 	if (NULL != found_slash) {
 		*found_slash = 0;
@@ -185,7 +185,7 @@ int autoupdate(
 		4 != write(sockfd, "\r\n\r\n", 4) {
 			close(sockfd);
 			fprintf(stderr, "Auto-update Failed: write failed\n");
-			return;
+			return 2;
 	}
 
 	// Read the header
@@ -198,7 +198,7 @@ int autoupdate(
 		if (bytes < 0) {
 			close(sockfd);
 			fprintf(stderr, "Auto-update Failed: read failed\n");
-			return;
+			return 2;
 		}
 		if (bytes == 0) {
 			/* EOF */
@@ -215,7 +215,7 @@ int autoupdate(
 	if (NULL == header_end) {
 		close(sockfd);
 		fprintf(stderr, "Auto-update Failed: failed to find the end of the response header\n");
-		return;
+		return 2;
 	}
 	assert(received <= total);
 	// Parse the header
@@ -241,12 +241,12 @@ int autoupdate(
 	if (-1 == found_length) {
 		close(sockfd);
 		fprintf(stderr, "Auto-update Failed: failed to find a Content-Length header\n");
-		return;
+		return 2;
 	}
 	if (0 == found_length) {
 		close(sockfd);
 		fprintf(stderr, "Auto-update Failed: found a Content-Length header of zero\n");
-		return;
+		return 2;
 	}
 	assert(found_length > 0);
 	// Read the body
@@ -259,7 +259,7 @@ int autoupdate(
 	if (NULL == body_buffer) {
 		close(sockfd);
 		fprintf(stderr, "Auto-update Failed: Insufficient memory\n");
-		return;
+		return 2;
 	}
 	memcpy(body_buffer, (header_end + 4), the_rest);
 	char *body_buffer_ptr = body_buffer + the_rest;
@@ -278,7 +278,7 @@ int autoupdate(
 			fprintf(stderr, "Auto-update Failed: read failed\n");
 			free(body_buffer);
 			close(sockfd);
-			return;
+			return 2;
 		}
 		if (bytes == 0) {
 			/* EOF */
@@ -294,7 +294,7 @@ int autoupdate(
 		fprintf(stderr, "Auto-update Failed: prematurely reached EOF after reading %lld bytes\n", received);
 		close(sockfd);
 		free(body_buffer);
-		return;
+		return 2;
 	}
 	fprintf(stderr, "\n");
 	fflush(stderr);
@@ -309,7 +309,7 @@ int autoupdate(
 	if (NULL == uncomp) {
 		fprintf(stderr, "Auto-update Failed: Insufficient memory\n");
 		free(body_buffer);
-		return;
+		return 2;
 	}
 
 	z_stream strm;
@@ -325,7 +325,7 @@ int autoupdate(
 		free(uncomp);
 		free(body_buffer);
 		fprintf(stderr, "Auto-update Failed: inflateInit2 failed\n");
-		return;
+		return 2;
 	}
 	
 	while (!done) {
@@ -337,7 +337,7 @@ int autoupdate(
 				free(uncomp);
 				free(body_buffer);
 				fprintf(stderr, "Auto-update Failed: calloc failed\n");
-				return;
+				return 2;
 			}
 			memcpy( uncomp2, uncomp, uncompLength );
 			uncompLength += half_length ;
@@ -355,7 +355,7 @@ int autoupdate(
 			fprintf(stderr, "Auto-update Failed: inflate failed with %d\n", err);
 			free(uncomp);
 			free(body_buffer);
-			return;
+			return 2;
 		}
 	}
 
@@ -363,7 +363,7 @@ int autoupdate(
 		fprintf(stderr, "Auto-update Failed: inflateInit2 failed\n");
 		free(uncomp);
 		free(body_buffer);
-		return;
+		return 2;
 	}
 
 	SQUASH_OS_PATH tmpdir = squash_tmpdir();
@@ -371,7 +371,7 @@ int autoupdate(
 		fprintf(stderr, "Auto-update Failed: no temporary folder found\n");
 		free(uncomp);
 		free(body_buffer);
-		return;
+		return 2;
 	}
 	SQUASH_OS_PATH tmpf = squash_tmpf(tmpdir, NULL);
 	if (NULL == tmpf) {
@@ -379,7 +379,7 @@ int autoupdate(
 		free((void*)(tmpdir));
 		free(uncomp);
 		free(body_buffer);
-		return;
+		return 2;
 	}
 	FILE *fp = fopen(tmpf, "wb");
 	if (NULL == fp) {
@@ -388,7 +388,7 @@ int autoupdate(
 		free((void*)(tmpf));
 		free(uncomp);
 		free(body_buffer);
-		return;
+		return 2;
 	}
 	fprintf(stderr, " to %s\n", tmpf);
 	size_t fwrite_ret = fwrite(uncomp, sizeof(char), strm.total_out, fp);
@@ -400,7 +400,7 @@ int autoupdate(
 		free((void*)(tmpf));
 		free(uncomp);
 		free(body_buffer);
-		return;
+		return 2;
 	}
 	fclose(fp);
 	free(uncomp);
@@ -413,7 +413,7 @@ int autoupdate(
 		free((void*)(tmpdir));
 		free((void*)(tmpf));
 		unlink(tmpf);
-		return;
+		return 2;
 	}
 	if (uv_exepath(exec_path, &exec_path_len) != 0) {
 		if (!argv[0]) {
@@ -421,7 +421,7 @@ int autoupdate(
 			free((void*)(tmpdir));
 			free((void*)(tmpf));
 			unlink(tmpf);
-			return;
+			return 2;
 		}
 		assert(strlen(argv[0]) < 2 * PATH_MAX);
 		memcpy(exec_path, argv[0], strlen(argv[0]));
@@ -434,7 +434,7 @@ int autoupdate(
 		free((void*)(tmpdir));
 		free((void*)(tmpf));
 		unlink(tmpf);
-		return;
+		return 2;
 	}
 	ret = chmod(tmpf, current_st.st_mode | S_IXUSR);
 	if (0 != ret) {
@@ -443,7 +443,7 @@ int autoupdate(
 		free((void*)(tmpdir));
 		free((void*)(tmpf));
 		unlink(tmpf);
-		return;
+		return 2;
 	}
 	// move
 	fprintf(stderr, "Moving %s to %s\n", tmpf, exec_path);
@@ -454,7 +454,7 @@ int autoupdate(
 		free((void*)(tmpdir));
 		free((void*)(tmpf));
 		unlink(tmpf);
-		return;
+		return 2;
 	}
 	fprintf(stderr, "Restarting\n");
 	ret = execv(exec_path, argv);

@@ -7,13 +7,30 @@ Cross-platform C library to enable your application to auto-update itself in pla
 
 ## API
 
-There is only one single API, i.e. `autoupdate()`, accepting the following arguments:
+There is only one single API, i.e. `autoupdate()`.
+
+```C
+int autoupdate(argc, argv, host, port, path)
+```
+
+It accepts the following arguments:
 
 - the 1st and 2nd arguments are the same as those passed to `main()`
 - `host` is the host name of the update server to communicate with
 - `port` is the port of the server, which is a string on Windows and a 16-bit integer on UNIX
 - `path` is the paramater passed to the HTTP/1.0 HEAD request of the Round 1
 - `current` is the current version string to be compared with what is returned from the server
+
+It never returns if a new version was detected and auto-update was successfully performed.
+Otherwise, it returns one of the following integer to indicate the situation.
+
+|  Return Value  | Indication   |
+|:--------------:|--------------|
+|        0       | Latest version confirmed. No need to update.
+|        1       | Auto-update shall not proceed due to environment variable `LIBAUTOUPDATE_SKIP` being set. |
+|        2       | Auto-update process failed prematually and detailed errors are printed to stderr.  |
+
+## Communication
 
 ### Round 1
 
@@ -38,21 +55,11 @@ Based on the `Content-Type` header received, an addtional inflation operation mi
 - `Content-Type: application/x-gzip`: Gzip Inflation is performed
 - `Content-Type: application/zip`: Deflate compression is assumed and the first file is inflated and used
 
-### Self-replacing
+## Self-replacing
 
 After all the above procedures the data is ready to proceed with a self-replacing.
 The program replaces itself in-place with the help of the system temporary directory,
 after which it restarts itself with the new release.
-
-### Return Value
-
-It never returns if a new version was detected and auto-update was successfully performed.
-Otherwise, it returns one of the following integer to indicate the situation.
-
-|  Return Value  | Indication   |
-|:--------------:|--------------|
-|        0       | Latest version confirmed. No need to update.
-|        1       | Auto-update shall not proceed due to environment variable `LIBAUTOUPDATE_SKIP` being set. |
 
 ## Examples
 
