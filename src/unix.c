@@ -8,6 +8,7 @@
 #ifndef _WIN32
 
 #include "autoupdate.h"
+#include "autoupdate_internal.h"
 #include "zlib.h"
 
 #include <assert.h>
@@ -21,15 +22,6 @@
 #include <unistd.h>
 #include <sys/select.h>
 #include <limits.h>  // PATH_MAX
-
-static short should_proceed()
-{
-	if (NULL == getenv("LIBAUTOUPDATE_SKIP")) {
-		return 1;
-	} else {
-		return 0;
-	}
-}
 
 int autoupdate(
 	int argc,
@@ -45,7 +37,7 @@ int autoupdate(
 	int sockfd, bytes, total;
 	char response[1024 * 10 + 1]; // 10KB
 
-	if (!should_proceed()) {
+	if (!autoupdate_should_proceed()) {
 		return 1;
 	}
 

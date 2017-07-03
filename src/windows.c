@@ -8,6 +8,7 @@
 #ifdef _WIN32
 
 #include "autoupdate.h"
+#include "autoupdate_internal.h"
 #include "zlib.h"
 
 #include <assert.h>
@@ -19,34 +20,6 @@
 #include <conio.h>
 #include <stdint.h>
 #include <stdlib.h> /* exit */
-
-#define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop) )
-
-PACK(
-	struct ZIPLocalFileHeader
-{
-	uint32_t signature;
-	uint16_t versionNeededToExtract; // unsupported
-	uint16_t generalPurposeBitFlag; // unsupported
-	uint16_t compressionMethod;
-	uint16_t lastModFileTime;
-	uint16_t lastModFileDate;
-	uint32_t crc32;
-	uint32_t compressedSize;
-	uint32_t uncompressedSize;
-	uint16_t fileNameLength;
-	uint16_t extraFieldLength; // unsupported
-});
-
-static short should_proceed()
-{
-	TCHAR lpBuffer[32767 + 1];
-	if (0 == GetEnvironmentVariable("LIBAUTOUPDATE_SKIP", lpBuffer, 32767)) {
-		return 1;
-	} else {
-		return 0;
-	}
-}
 
 int autoupdate(
 	int argc,
@@ -60,7 +33,7 @@ int autoupdate(
 	WSADATA wsaData;
 	intptr_t intptr_ret;
 
-	if (!should_proceed()) {
+	if (!autoupdate_should_proceed()) {
 		return 1;
 	}
 

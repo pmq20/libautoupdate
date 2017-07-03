@@ -5,3 +5,5 @@
  * For full terms see the included LICENSE file
  */
 
+#include "autoupdate.h"
+#include "autoupdate_internal.h"
