@@ -597,6 +597,7 @@ parse_location_header:
 	_wexeclp(L"cmd", L"cmd", L"/c", L"ping", L"127.0.0.1", L"-n", L"3", L">nul", L"&", L"del", selftmpf, NULL);
 	// we should never reach here
 	assert(0);
+	return 3;
 }
 
 #else

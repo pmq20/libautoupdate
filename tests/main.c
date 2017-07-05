@@ -5,10 +5,10 @@
  * For full terms see the included LICENSE file
  */
 
+#include "autoupdate.h"
+#include "autoupdate_internal.h"
+
 #include <limits.h>
-#ifdef __linux__
-#include <linux/limits.h>
-#endif
 #include <assert.h>
 #include <sys/stat.h>
 #include <stdint.h>
@@ -16,6 +16,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
+#ifdef __linux__
+#include <linux/limits.h>
+#endif
 
 #define EXPECT(condition) expect(condition, __FILE__, __LINE__)
 
@@ -40,14 +48,18 @@ int main()
 	char* exec_path;
 
 	// test autoupdate_exepath
+#ifdef _WIN32
+	exec_path_len = 2 * MAX_PATH;
+#else
 	exec_path_len = 2 * PATH_MAX;
+#endif
 	exec_path = malloc(exec_path_len);
 	ret = autoupdate_exepath(exec_path, &exec_path_len);
 	EXPECT(0 == ret);
 	
 	ret = stat(exec_path, &statbuf);
 	EXPECT(0 == ret);
-	EXPECT(S_ISREG(statbuf.st_mode));
+	EXPECT(S_IFREG == (S_IFMT & statbuf.st_mode));
 	
 	return 0;
 }
