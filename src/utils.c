@@ -50,15 +50,20 @@ short autoupdate_should_proceed()
 #ifdef _WIN32
 short autoupdate_should_proceed_24_hours(int argc, wchar_t *wargv[], short will_write)
 {
+	const KNOWNFOLDERID rfid = FOLDERID_Profile;
 	PWSTR ppszPath = NULL;
 	HRESULT hret;
-	wchar_t filepath[32768 + 1];
+	wchar_t filepath[2 * 32768];
 	const wchar_t *filename = L"\\.libautoupdate";
+	size_t exec_path_len = 2 * 32768;
+	char exec_path[2 * 32768];
 #else
 short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_write)
 {
 	char *filepath = NULL;
 	const char *filename = "/.libautoupdate";
+	size_t exec_path_len = 2 * PATH_MAX;
+	char exec_path[2 * PATH_MAX];
 #endif // _WIN32
 	short has_written = 0;
 	time_t time_now;
@@ -74,15 +79,17 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 	const char *homedir;
 	int ret;
 	size_t size_t_ret;
-	size_t exec_path_len = 2 * PATH_MAX;
-	char exec_path[2 * PATH_MAX];
 	
 	if (autoupdate_exepath(exec_path, &exec_path_len) != 0) {
+#ifdef _WIN32
+		goto exit;
+#else
 		if (!argv[0]) {
 			goto exit;
 		}
 		assert(strlen(argv[0]) < 2 * PATH_MAX);
 		memcpy(exec_path, argv[0], strlen(argv[0]));
+#endif
 	}
 
 	time_now = time(NULL);
@@ -91,7 +98,7 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 	}
 #ifdef _WIN32
 	hret = SHGetKnownFolderPath(
-		FOLDERID_Profile,
+		&rfid,
 		0,
 		NULL,
 		&ppszPath
@@ -99,7 +106,9 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 	if (S_OK != hret) {
 		goto exit;
 	}
-	snprintf(filepath, 32768, "%S%S", ppszPath, filename);
+	memcpy(filepath, ppszPath, wcslen(ppszPath) * sizeof(wchar_t));
+	memcpy(filepath + wcslen(ppszPath) * sizeof(wchar_t), filename, wcslen(filename) * sizeof(wchar_t));
+	filepath[wcslen(ppszPath) + wcslen(ppszPath)] = 0;
 	f = _wfopen(filepath, L"r");
 #else
 	pw = getpwuid(getuid());
@@ -177,7 +186,11 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 			if (will_write) {
 				if (item_time >= 1000000000 && time_now >= 1000000000) {
 					has_written = 1;
+#ifdef _WIN32
+					_ltoa(time_now, string, 10);
+#else
 					ret = sprintf(string, "%ld", time_now);
+#endif // _WIN32
 					string[10] = ' ';
 					*cursor = '\n';
 					break;
@@ -207,11 +220,23 @@ write:
 		}
 		if (!has_written) {
 			char writting[20];
+#ifdef _WIN32
+			_ltoa(time_now, writting, 10);
+			ret = fwrite(writting, strlen(writting), 1, f);
+			if (1 != ret) {
+				goto exit;
+			}
+			ret = fwrite(" ", 1, 1, f);
+			if (1 != ret) {
+				goto exit;
+			}
+#else
 			ret = sprintf(writting, "%ld ", time_now);
 			ret = fwrite(writting, strlen(writting), 1, f);
 			if (1 != ret) {
 				goto exit;
 			}
+#endif // _WIN32
 			ret = fwrite(exec_path, exec_path_len, 1, f);
 			if (1 != ret) {
 				goto exit;
