@@ -7,6 +7,7 @@
 
 #include "autoupdate.h"
 #include "autoupdate_internal.h"
+#include <assert.h>
 
 #ifdef _WIN32
 
@@ -97,14 +98,19 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 	filepath[strlen(homedir) + strlen(filename)] = 0;
 	f = fopen(filepath, "r");
 	if (NULL == f) {
-		goto exit;
+		if (will_write) {
+			string0 = NULL;
+			goto write;
+		} else {
+			goto exit;
+		}
 	}
 	ret = fseek(f, 0, SEEK_END);
 	if (0 != ret) {
 		goto exit;
 	}
 	fsize = ftell(f);
-	if (fsize < 0) {
+	if (fsize <= 0) {
 		goto exit;
 	}
 	ret = fseek(f, 0, SEEK_SET);
@@ -116,6 +122,7 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 	if (NULL == string) {
 		goto exit;
 	}
+	string0 = string;
 	size_t_ret = fread(string, fsize, 1, f);
 	if (1 != size_t_ret) {
 		goto exit;
@@ -126,12 +133,17 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 	}
 	f = NULL;
 	string[fsize] = 0;
-	string0 = string;
 	while (string < string0 + fsize) {
 		cursor = strchr(string, '\n');
-		if (cursor) {
-			*cursor = 0;
+		if (!cursor) {
+			if (will_write) {
+				string0 = NULL;
+				goto write;
+			} else {
+				goto exit;
+			}
 		}
+		*cursor = 0;
 		item_space = strchr(string, ' ');
 		if (!item_space) {
 			goto exit;
@@ -143,7 +155,8 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 			if (will_write) {
 				if (item_time >= 1000000000 && time_now >= 1000000000) {
 					has_written = 1;
-					ret = sprintf(string, "%ld ", time_now);
+					ret = sprintf(string, "%ld", time_now);
+					string[10] = ' ';
 					*cursor = '\n';
 					break;
 				}
@@ -151,22 +164,20 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 				return 0;
 			}
 		}
-		if (cursor) {
-			*cursor = '\n';
-			string = cursor + 1;
-		} else {
-			break;
-		}
+		*cursor = '\n';
+		string = cursor + 1;
 	}
-	
+write:
 	if (will_write) {
 		f = fopen(filepath, "w");
 		if (NULL == f) {
 			goto exit;
 		}
-		ret = fwrite(string0, fsize, 1, f);
-		if (1 != ret) {
-			goto exit;
+		if (string0) {
+			ret = fwrite(string0, fsize, 1, f);
+			if (1 != ret) {
+				goto exit;
+			}
 		}
 		if (!has_written) {
 			ret = asprintf(&writting, "%ld %s\n", time_now, exec_path);
@@ -184,8 +195,8 @@ exit:
 	if (filepath) {
 		free(filepath);
 	}
-	if (string) {
-		free(string);
+	if (string0) {
+		free(string0);
 	}
 	if (writting) {
 		free(writting);

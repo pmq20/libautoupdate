@@ -67,7 +67,9 @@ int main(int argc, char *argv[])
 	EXPECT(S_IFREG == (S_IFMT & statbuf.st_mode));
 	
 	// test autoupdate_should_proceed_24_hours()
-	autoupdate_should_proceed_24_hours();
+	autoupdate_should_proceed_24_hours(argc, argv, 0);
+	autoupdate_should_proceed_24_hours(argc, argv, 1);
+	autoupdate_should_proceed_24_hours(argc, argv, 1);
 
 	return 0;
 }
