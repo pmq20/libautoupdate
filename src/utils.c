@@ -12,6 +12,8 @@
 #ifdef _WIN32
 
 #include <Windows.h>
+#include <wchar.h>
+#include <Shlobj.h>
 
 short autoupdate_should_proceed()
 {
@@ -21,11 +23,6 @@ short autoupdate_should_proceed()
 	} else {
 		return 0;
 	}
-}
-
-short autoupdate_should_proceed_24_hours(int argc, wchar_t *wargv[], short will_write)
-{
-	return 1;
 }
 
 #else
@@ -48,16 +45,27 @@ short autoupdate_should_proceed()
 	}
 }
 
+#endif // _WIN32
+
+#ifdef _WIN32
+short autoupdate_should_proceed_24_hours(int argc, wchar_t *wargv[], short will_write)
+{
+	PWSTR ppszPath = NULL;
+	HRESULT hret;
+	wchar_t filepath[32768 + 1];
+	const wchar_t *filename = L"\\.libautoupdate";
+#else
 short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_write)
 {
-	char *writting = NULL;
+	char *filepath = NULL;
+	const char *filename = "/.libautoupdate";
+#endif // _WIN32
 	short has_written = 0;
 	time_t time_now;
 	long item_time;
 	char *item_string = NULL;
 	char *item_space;
 	char *cursor;
-	char *filepath = NULL;
 	char *string = NULL;
 	char *string0 = NULL;
 	long fsize;
@@ -66,10 +74,9 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 	const char *homedir;
 	int ret;
 	size_t size_t_ret;
-	const char *filename = "/.libautoupdate";
 	size_t exec_path_len = 2 * PATH_MAX;
 	char exec_path[2 * PATH_MAX];
-
+	
 	if (autoupdate_exepath(exec_path, &exec_path_len) != 0) {
 		if (!argv[0]) {
 			goto exit;
@@ -77,10 +84,24 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 		assert(strlen(argv[0]) < 2 * PATH_MAX);
 		memcpy(exec_path, argv[0], strlen(argv[0]));
 	}
+
 	time_now = time(NULL);
 	if ((time_t)-1 == time_now) {
 		goto exit;
 	}
+#ifdef _WIN32
+	hret = SHGetKnownFolderPath(
+		FOLDERID_Profile,
+		0,
+		NULL,
+		&ppszPath
+	);
+	if (S_OK != hret) {
+		goto exit;
+	}
+	snprintf(filepath, 32768, "%S%S", ppszPath, filename);
+	f = _wfopen(filepath, L"r");
+#else
 	pw = getpwuid(getuid());
 	if (NULL == pw) {
 		goto exit;
@@ -97,6 +118,7 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 	memcpy(filepath + strlen(homedir), filename, strlen(filename));
 	filepath[strlen(homedir) + strlen(filename)] = 0;
 	f = fopen(filepath, "r");
+#endif // _WIN32
 	if (NULL == f) {
 		if (will_write) {
 			string0 = NULL;
@@ -151,7 +173,7 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 		*item_space = 0;
 		item_time = atol(string);
 		item_string = item_space + 1;
-		if (0 == strcmp(item_string, exec_path)) {
+		if (exec_path_len == cursor - item_string && 0 == memcmp(item_string, exec_path, exec_path_len)) {
 			if (will_write) {
 				if (item_time >= 1000000000 && time_now >= 1000000000) {
 					has_written = 1;
@@ -169,7 +191,11 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 	}
 write:
 	if (will_write) {
+#ifdef _WIN32
+		f = _wfopen(filepath, L"w");
+#else
 		f = fopen(filepath, "w");
+#endif // _WIN32
 		if (NULL == f) {
 			goto exit;
 		}
@@ -180,8 +206,17 @@ write:
 			}
 		}
 		if (!has_written) {
-			ret = asprintf(&writting, "%ld %s\n", time_now, exec_path);
+			char writting[20];
+			ret = sprintf(&writting, "%ld ", time_now);
 			ret = fwrite(writting, strlen(writting), 1, f);
+			if (1 != ret) {
+				goto exit;
+			}
+			ret = fwrite(exec_path, exec_path_len, 1, f);
+			if (1 != ret) {
+				goto exit;
+			}
+			ret = fwrite("\n", 1, 1, f);
 			if (1 != ret) {
 				goto exit;
 			}
@@ -198,10 +233,10 @@ exit:
 	if (string0) {
 		free(string0);
 	}
-	if (writting) {
-		free(writting);
+#ifdef _WIN32
+	if (ppszPath) {
+		CoTaskMemFree(ppszPath);
 	}
+#endif
 	return 1;
 }
-
-#endif // _WIN32

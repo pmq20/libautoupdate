@@ -65,11 +65,20 @@ int main(int argc, char *argv[])
 	ret = stat(exec_path, &statbuf);
 	EXPECT(0 == ret);
 	EXPECT(S_IFREG == (S_IFMT & statbuf.st_mode));
-	
+
+	// test autoupdate_should_proceed()
+	autoupdate_should_proceed();
+
 	// test autoupdate_should_proceed_24_hours()
+#ifdef _WIN32
+	autoupdate_should_proceed_24_hours(argc, wargv, 0);
+	autoupdate_should_proceed_24_hours(argc, wargv, 1);
+	autoupdate_should_proceed_24_hours(argc, wargv, 1);
+#else
 	autoupdate_should_proceed_24_hours(argc, argv, 0);
 	autoupdate_should_proceed_24_hours(argc, argv, 1);
 	autoupdate_should_proceed_24_hours(argc, argv, 1);
+#endif
 
 	return 0;
 }
