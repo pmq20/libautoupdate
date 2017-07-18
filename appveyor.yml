@@ -26,5 +26,4 @@ build_script:
     cmake --build . --config Release
     
     C:\projects\libautoupdate\build\Release\autoupdate_tests.exe --help
-
-    ctest --verbose
+    
