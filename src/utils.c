@@ -15,6 +15,14 @@
 #include <wchar.h>
 #include <Shlobj.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <string.h>
+#include <time.h>
+#include <limits.h>
+
 short autoupdate_should_proceed()
 {
 	TCHAR lpBuffer[32767 + 1];
@@ -64,6 +72,8 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 	const char *filename = "/.libautoupdate";
 	size_t exec_path_len = 2 * PATH_MAX;
 	char exec_path[2 * PATH_MAX];
+	struct passwd *pw;
+	const char *homedir;
 #endif // _WIN32
 	short has_written = 0;
 	time_t time_now;
@@ -75,8 +85,6 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 	char *string0 = NULL;
 	long fsize;
 	FILE *f = NULL;
-	struct passwd *pw;
-	const char *homedir;
 	int ret;
 	size_t size_t_ret;
 	
@@ -107,9 +115,9 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 		goto exit;
 	}
 	memcpy(filepath, ppszPath, wcslen(ppszPath) * sizeof(wchar_t));
-	memcpy(filepath + wcslen(ppszPath) * sizeof(wchar_t), filename, wcslen(filename) * sizeof(wchar_t));
-	filepath[wcslen(ppszPath) + wcslen(ppszPath)] = 0;
-	f = _wfopen(filepath, L"r");
+	memcpy(filepath + wcslen(ppszPath), filename, wcslen(filename) * sizeof(wchar_t));
+	filepath[wcslen(ppszPath) + wcslen(filename)] = 0;
+	f = _wfopen(filepath, L"rb");
 #else
 	pw = getpwuid(getuid());
 	if (NULL == pw) {
@@ -126,7 +134,7 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 	memcpy(filepath, homedir, strlen(homedir));
 	memcpy(filepath + strlen(homedir), filename, strlen(filename));
 	filepath[strlen(homedir) + strlen(filename)] = 0;
-	f = fopen(filepath, "r");
+	f = fopen(filepath, "rb");
 #endif // _WIN32
 	if (NULL == f) {
 		if (will_write) {
@@ -154,10 +162,11 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 		goto exit;
 	}
 	string0 = string;
-	size_t_ret = fread(string, fsize, 1, f);
-	if (1 != size_t_ret) {
+	ret = fread(string, fsize, 1, f);
+	if (1 != ret) {
 		goto exit;
 	}
+	string[fsize] = 0;
 	ret = fclose(f);
 	if (0 != ret) {
 		goto exit;
@@ -199,15 +208,16 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 				return 0;
 			}
 		}
+		*item_space = ' ';
 		*cursor = '\n';
 		string = cursor + 1;
 	}
 write:
 	if (will_write) {
 #ifdef _WIN32
-		f = _wfopen(filepath, L"w");
+		f = _wfopen(filepath, L"wb");
 #else
-		f = fopen(filepath, "w");
+		f = fopen(filepath, "wb");
 #endif // _WIN32
 		if (NULL == f) {
 			goto exit;
@@ -252,15 +262,16 @@ exit:
 	if (f) {
 		fclose(f);
 	}
-	if (filepath) {
-		free(filepath);
-	}
 	if (string0) {
 		free(string0);
 	}
 #ifdef _WIN32
 	if (ppszPath) {
 		CoTaskMemFree(ppszPath);
+	}
+#else
+	if (filepath) {
+		free(filepath);
 	}
 #endif
 	return 1;
