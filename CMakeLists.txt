@@ -15,7 +15,7 @@ ADD_LIBRARY(autoupdate ${SRC_H} ${SRC_AUTOUPDATE})
 
 IF(BUILD_TESTS)
   ENABLE_TESTING()
-  ADD_TEST(autoupdate_tests autoupdate_tests)
+  ADD_TEST(autoupdate_tests autoupdate_tests --help)
   FILE(GLOB SRC_TEST tests/*.c)
   ADD_EXECUTABLE(autoupdate_tests ${SRC_TEST})
   TARGET_LINK_LIBRARIES(autoupdate_tests autoupdate ${ZLIB_LIBRARIES})

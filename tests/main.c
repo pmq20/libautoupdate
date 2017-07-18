@@ -84,8 +84,6 @@ int main(int argc, char *argv[])
 
         // test autoupdate()
 #ifdef _WIN32
-        ++argc;
-        wargv[1] = L"--help";
         autoupdate(
                 argc,
                 wargv,
@@ -98,8 +96,6 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef __linux__
-        ++argc;
-        argv[1] = "--help";
         autoupdate(
                 argc,
                 argv,
@@ -112,8 +108,6 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef __APPLE__
-        ++argc;
-        argv[1] = "--help";
         autoupdate(
                 argc,
                 argv,
