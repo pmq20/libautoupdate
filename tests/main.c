@@ -19,6 +19,7 @@
 
 #ifdef _WIN32
 #include <Windows.h>
+#include <wchar.h>
 #endif
 
 #ifdef __linux__
@@ -40,7 +41,11 @@ static void expect(short condition, const char *file, int line)
 	fflush(stderr);
 }
 
-int main()
+#ifdef _WIN32
+int main(int argc, wchar_t *wargv[])
+#else
+int main(int argc, char *argv[])
+#endif
 {
 	int ret;
 	struct stat statbuf;
@@ -61,5 +66,8 @@ int main()
 	EXPECT(0 == ret);
 	EXPECT(S_IFREG == (S_IFMT & statbuf.st_mode));
 	
+	// test autoupdate_should_proceed_24_hours()
+	autoupdate_should_proceed_24_hours();
+
 	return 0;
 }

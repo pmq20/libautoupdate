@@ -2,7 +2,7 @@
 
 ## v0.2.0
 
-work in progress
+- Auto-update shall only run once in every 24 hours with help of the file `~/.libautoupdate`
 
 ## v0.1.0
 

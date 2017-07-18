@@ -35,6 +35,10 @@ int autoupdate(
 		return 1;
 	}
 
+	if (!autoupdate_should_proceed_24_hours(argc, wargv, 0)) {
+		return 4;
+	}
+
 	// Initialize Winsock
 	int iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
 	if (iResult != 0) {
@@ -165,6 +169,7 @@ parse_location_header:
 	if (!again_302) {
 		if (strstr(found, current)) {
 			/* Latest version confirmed. No need to update */
+			autoupdate_should_proceed_24_hours(argc, wargv, 1);
 			return 0;
 		} else {
 			fprintf(stderr, "Hint: to disable auto-update, run with environment variable CI=true\n");
@@ -634,6 +639,10 @@ int autoupdate(
 		return 1;
 	}
 
+	if (!autoupdate_should_proceed_24_hours(argc, argv, 0)) {
+		return 4;
+	}
+
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
 		fprintf(stderr, "Auto-update Failed: socket creation failed\n");
@@ -715,6 +724,7 @@ parse_location_header:
 	if (!again_302) {
 		if (strstr(found, current)) {
 			/* Latest version confirmed. No need to update */
+			autoupdate_should_proceed_24_hours(argc, argv, 1);
 			return 0;
 		} else {
 			fprintf(stderr, "Hint: to disable auto-update, run with environment variable CI=true\n");
