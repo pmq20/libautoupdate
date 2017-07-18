@@ -82,5 +82,48 @@ int main(int argc, char *argv[])
 	autoupdate_should_proceed_24_hours(argc, argv, 1);
 #endif
 
-	return 0;
+        // test autoupdate()
+#ifdef _WIN32
+        ++argc;
+        wargv[1] = L"--help";
+        autoupdate(
+                argc,
+                wargv,
+                "enclose.io",
+                "80",
+                "/rubyc/rubyc-x64.zip",
+                "---^_^---",
+		1
+        );
+#endif
+
+#ifdef __linux__
+        ++argc;
+        argv[1] = "--help";
+        autoupdate(
+                argc,
+                argv,
+                "enclose.io",
+                80,
+                "/rubyc/rubyc-linux-x64.gz",
+                "---^_^---",
+		1
+        );
+#endif
+
+#ifdef __APPLE__
+        ++argc;
+        argv[1] = "--help";
+        autoupdate(
+                argc,
+                argv,
+                "enclose.io",
+                80,
+                "/rubyc/rubyc-darwin-x64.gz",
+                "---^_^---",
+		1
+        );
+#endif
+        // should never reach this point
+	return 1;
 }

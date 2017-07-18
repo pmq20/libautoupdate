@@ -26,16 +26,17 @@ int autoupdate(
 	const char *host,
 	const char *port,
 	const char *path,
-	const char *current
+	const char *current,
+	short force
 )
 {
 	WSADATA wsaData;
 
-	if (!autoupdate_should_proceed()) {
+	if (!force && !autoupdate_should_proceed()) {
 		return 1;
 	}
 
-	if (!autoupdate_should_proceed_24_hours(argc, wargv, 0)) {
+	if (!force && !autoupdate_should_proceed_24_hours(argc, wargv, 0)) {
 		return 4;
 	}
 
@@ -627,7 +628,8 @@ int autoupdate(
 	const char *host,
 	uint16_t port,
 	const char *path,
-	const char *current
+	const char *current,
+	short force
 )
 {
 	struct hostent *server;
@@ -635,11 +637,11 @@ int autoupdate(
 	int sockfd, bytes, total;
 	char response[1024 * 10 + 1]; // 10KB
 
-	if (!autoupdate_should_proceed()) {
+	if (!force && !autoupdate_should_proceed()) {
 		return 1;
 	}
 
-	if (!autoupdate_should_proceed_24_hours(argc, argv, 0)) {
+	if (!force && !autoupdate_should_proceed_24_hours(argc, argv, 0)) {
 		return 4;
 	}
 
