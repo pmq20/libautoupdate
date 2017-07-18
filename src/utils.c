@@ -162,8 +162,8 @@ short autoupdate_should_proceed_24_hours(int argc, char *argv[], short will_writ
 		goto exit;
 	}
 	string0 = string;
-	ret = fread(string, fsize, 1, f);
-	if (1 != ret) {
+	size_t_ret = fread(string, fsize, 1, f);
+	if (1 != size_t_ret) {
 		goto exit;
 	}
 	string[fsize] = 0;
