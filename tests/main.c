@@ -73,10 +73,12 @@ int main(int argc, char *argv[])
 #ifdef _WIN32
 	autoupdate_should_proceed_24_hours(argc, wargv, 0);
 	autoupdate_should_proceed_24_hours(argc, wargv, 1);
+	autoupdate_should_proceed_24_hours(argc, wargv, 0);
 	autoupdate_should_proceed_24_hours(argc, wargv, 1);
 #else
 	autoupdate_should_proceed_24_hours(argc, argv, 0);
 	autoupdate_should_proceed_24_hours(argc, argv, 1);
+	autoupdate_should_proceed_24_hours(argc, argv, 0);
 	autoupdate_should_proceed_24_hours(argc, argv, 1);
 #endif
 
