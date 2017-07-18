@@ -207,7 +207,7 @@ write:
 		}
 		if (!has_written) {
 			char writting[20];
-			ret = sprintf(&writting, "%ld ", time_now);
+			ret = sprintf(writting, "%ld ", time_now);
 			ret = fwrite(writting, strlen(writting), 1, f);
 			if (1 != ret) {
 				goto exit;
