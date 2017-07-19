@@ -19,6 +19,7 @@
 #include <conio.h>
 #include <stdint.h>
 #include <stdlib.h> /* exit */
+#include <wchar.h>
 
 int autoupdate(
 	int argc,
@@ -492,6 +493,30 @@ parse_location_header:
 		free(body_buffer);
 		return 2;
 	}
+	/* Windows paths can never be longer than this. */
+	const size_t exec_path_len = 32768;
+	wchar_t exec_path[32768];
+	DWORD utf16_len = GetModuleFileNameW(NULL, exec_path, exec_path_len);
+	if (0 == utf16_len) {
+		fprintf(stderr, "Auto-update Failed: GetModuleFileNameW failed with GetLastError=%d\n", GetLastError());
+		free((void*)(tmpdir));
+		free(uncomp);
+		free(body_buffer);
+		return 2;
+	}
+	if (tmpdir[0] != exec_path[0]) {
+		free((void*)(tmpdir));
+		tmpdir = wcsdup(exec_path);
+		wchar_t *backslash = wcsrchr(tmpdir, L'\\');
+		if (NULL == backslash) {
+			fprintf(stderr, "Auto-update Failed: Cannot find an approriate tmpdir with %S\n", tmpdir);
+			free((void*)(tmpdir));
+			free(uncomp);
+			free(body_buffer);
+			return 2;
+		}
+		*backslash = 0;
+	}
 	wchar_t *tmpf = autoupdate_tmpf(tmpdir, "exe");
 	if (NULL == tmpf) {
 		fprintf(stderr, "Auto-update Failed: no temporary file available\n");
@@ -524,17 +549,6 @@ parse_location_header:
 	fclose(fp);
 	free(uncomp);
 	free(body_buffer);
-	/* Windows paths can never be longer than this. */
-	const size_t exec_path_len = 32768;
-	wchar_t exec_path[32768];
-	DWORD utf16_len = GetModuleFileNameW(NULL, exec_path, exec_path_len);
-	if (0 == utf16_len) {
-		fprintf(stderr, "Auto-update Failed: GetModuleFileNameW failed with GetLastError=%d\n", GetLastError());
-		DeleteFileW(tmpf);
-		free((void*)(tmpdir));
-		free((void*)(tmpf));
-		return 2;
-	}
 	// Backup
 	wchar_t *selftmpf = autoupdate_tmpf(tmpdir, "exe");
 	if (NULL == selftmpf) {
