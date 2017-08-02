@@ -31,14 +31,14 @@
 static void expect(short condition, const char *file, int line)
 {
 	if (condition) {
-		fprintf(stdout, ".");
+		fprintf(stderr, ".");
 	}
 	else {
-		fprintf(stdout, "x");
-		fprintf(stdout, "\nFAILED: %s line %d\n", file, line);
+		fprintf(stderr, "x");
+		fprintf(stderr, "\nFAILED: %s line %d\n", file, line);
 		exit(1);
 	}
-	fflush(stdout);
+	fflush(stderr);
 }
 
 #ifdef _WIN32
