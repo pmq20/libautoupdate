@@ -32,7 +32,7 @@ Otherwise, it returns one of the following integers to indicate the situation:
 |:--------------:|---------------------------------------------------------------------------------------------|
 |        0       | Latest version confirmed. No need to update                                                 |
 |        1       | Auto-update shall not proceed due to environment variable `CI` being set                    |
-|        2       | Auto-update process failed prematually and detailed errors are printed to stderr            |
+|        2       | Auto-update process failed prematurely and detailed errors are printed to stderr            |
 |        3       | Failed to restart after replacing itself with the new version                               |
 |        4       | Auto-update shall not proceed due to being already checked in the last 24 hours             |
 
