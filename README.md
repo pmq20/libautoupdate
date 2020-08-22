@@ -137,7 +137,15 @@ int main(int argc, char *argv[])
   - The Operating System will delete it when restarted/tmpdir-full
   - Add facility to restore/rollback to the old file once the new version went wrong
 
+## Authors
+
+[Minqi Pan et al.](https://raw.githubusercontent.com/pmq20/libautoupdate/master/AUTHORS)
+
 ## License
 
 [MIT](https://raw.githubusercontent.com/pmq20/libautoupdate/master/LICENSE)
 
+## See Also
+
+- [Node.js Packer](https://github.com/pmq20/node-packer): Packing your Node.js application into a single executable.
+- [Ruby Packer](https://github.com/pmq20/ruby-packer): Packing your Ruby application into a single executable.
