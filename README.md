@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
 
 ## License
 
-[MIT License](https://raw.githubusercontent.com/pmq20/libautoupdate/master/LICENSE).
+[MIT](https://raw.githubusercontent.com/pmq20/libautoupdate/master/LICENSE)
 
 ## See Also
 
