@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
 
 ## License
 
-[MIT License](https://raw.githubusercontent.com/pmq20/libautoupdate/master/LICENSE): Copyright (c) 2017 - 2020 Minqi Pan.
+[MIT License](https://raw.githubusercontent.com/pmq20/libautoupdate/master/LICENSE).
 
 ## See Also
 
