@@ -129,6 +129,15 @@ int main(int argc, char *argv[])
 - Set environment variable `CI=true` will prevent auto-updating
 - Remove the file `~/.libautoupdate` will remove the once-per-24-hours check limit
 
+## To-do
+
+- cater to bad network connection situations
+- print more information about the new version
+- use better error messages when the user did not have permissions to move the new version into the destination directory
+- move the old binary to the system temporary directory, yet not deleting it.
+  - the Operating System will delete it when restarted/tmpdir-full
+  - add facility to restore/rollback to the old file once the new version went wrong
+
 ## See Also
 
 - [Enclose.IO](https://github.com/pmq20/enclose-io): cloud-based service that compiles your application into a single executable with auto-update.
